@@ -3,6 +3,12 @@ allprojects {
         google()
         mavenCentral()
     }
+    
+    // Modernize Java compatibility across all subprojects to suppress obsolete warnings
+    tasks.withType<JavaCompile>().configureEach {
+        sourceCompatibility = "17"
+        targetCompatibility = "17"
+    }
 }
 
 val newBuildDir: Directory =

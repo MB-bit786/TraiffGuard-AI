@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "940847910389",
+    "project_id": "traiffguad-ai",
+    "storage_bucket": "traiffguad-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:940847910389:android:3ded9c9f972753e7fce4bc",
+        "android_client_info": {
+          "package_name": "com.example.hscode_auditor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzc63xu-98UOX6vsaACUFgFzstpFRevCI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

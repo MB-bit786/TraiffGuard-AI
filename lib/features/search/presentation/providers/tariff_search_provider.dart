@@ -1,24 +1,33 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../invoice/data/repositories/sql_invoice_repository.dart';
+import '../../domain/repository/tariff_repository.dart';
+import '../../data/repository/sql_tariff_repository.dart';
+import '../../domain/usecases/search_tariff_use_case.dart';
+import '../../../../core/util/sql_database_service.dart';
 
-/// Provider to handle real-time searching of the local Tariff Master database
+final tariffRepositoryProvider = Provider<TariffRepository>((ref) {
+  final dbService = ref.watch(sqlDatabaseServiceProvider);
+  return SqlTariffRepository(dbService);
+});
+
+final searchTariffUseCaseProvider = Provider<SearchTariffUseCase>((ref) {
+  final repository = ref.watch(tariffRepositoryProvider);
+  return SearchTariffUseCase(repository);
+});
+
 final tariffSearchProvider = StateNotifierProvider.autoDispose<TariffSearchNotifier, AsyncValue<List<Map<String, dynamic>>>>((ref) {
-  final repository = ref.watch(sqlInvoiceRepositoryProvider);
-  return TariffSearchNotifier(repository);
+  final useCase = ref.watch(searchTariffUseCaseProvider);
+  return TariffSearchNotifier(useCase);
 });
 
 class TariffSearchNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
-  final SqlInvoiceRepository _repository;
+  final SearchTariffUseCase _searchTariffUseCase;
   Timer? _debounceTimer;
 
-  TariffSearchNotifier(this._repository) : super(const AsyncValue.loading()) {
-    // Initial fetch to show "All" data
+  TariffSearchNotifier(this._searchTariffUseCase) : super(const AsyncValue.loading()) {
     updateQuery('');
   }
 
-  /// Updates the search query and fetches matching results from the local database.
-  /// Includes a 300ms debounce to prevent rapid typing from locking the UI thread.
   void updateQuery(String query) {
     _debounceTimer?.cancel();
     
@@ -26,7 +35,7 @@ class TariffSearchNotifier extends StateNotifier<AsyncValue<List<Map<String, dyn
       if (mounted) state = const AsyncValue.loading();
       
       try {
-        final results = await _repository.searchTariffMaster(query);
+        final results = await _searchTariffUseCase.execute(query);
         if (mounted) {
           state = AsyncValue.data(results);
         }

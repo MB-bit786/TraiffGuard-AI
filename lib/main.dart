@@ -5,58 +5,47 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
-import 'package:hscode_auditor/core/theme/tariff_colors.dart';
-import 'package:hscode_auditor/features/dashboard/presentation/screens/dashboard_screen.dart';
-import 'package:hscode_auditor/features/invoice/presentation/screens/invoice_form_screen.dart';
-import 'package:hscode_auditor/features/audit/presentation/screens/audit_result_screen.dart';
-
-import 'package:hscode_auditor/features/audit/presentation/screens/audit_history_screen.dart';
-import 'package:hscode_auditor/features/dashboard/presentation/screens/trash_screen.dart';
-import 'package:hscode_auditor/core/services/auto_sync_service.dart';
+import 'package:hscode_auditor/config/theme/tariff_colors.dart';
+import 'package:hscode_auditor/features/dashboard/presentation/pages/main_layout_screen.dart';
+import 'package:hscode_auditor/features/invoice/presentation/pages/invoice_form_screen.dart';
+import 'package:hscode_auditor/features/audit/presentation/pages/audit_result_screen.dart';
+import 'package:hscode_auditor/features/auth/presentation/pages/auth_screen.dart';
+import 'package:hscode_auditor/features/audit/presentation/pages/audit_history_screen.dart';
+import 'package:hscode_auditor/features/dashboard/presentation/pages/trash_screen.dart';
+import 'package:hscode_auditor/features/dashboard/presentation/pages/edit_audit_screen.dart';
+import 'package:hscode_auditor/features/profile/presentation/pages/terms_conditions_screen.dart';
+import 'package:hscode_auditor/core/util/auto_sync_service.dart';
+import 'package:hscode_auditor/core/util/auth_service.dart';
+import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
 
 void main() async {
-  // 1. Ensure Flutter bindings are ready for FFI and System calls
   WidgetsFlutterBinding.ensureInitialized();
-  debugPrint('[STARTUP] WidgetsFlutterBinding active');
-
-  // 2. Cross-platform Database Factory Initialization
-  // This must happen before any database calls (e.g. in SqlDatabaseService)
-  if (kIsWeb) {
-    databaseFactory = databaseFactoryFfiWeb;
-    debugPrint('[STARTUP] Database: Initialized for Web');
-  } else {
-    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-      debugPrint('[STARTUP] Database: Initialized for Desktop (FFI)');
-    }
+  
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('[STARTUP] Firebase Error: $e');
   }
 
-  // 3. System-level UI configuration
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  
+  if (kIsWeb) {
+    databaseFactory = databaseFactoryFfiWeb;
+  } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: TariffColors.navyDeep,
-    ),
+    const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.light),
   );
 
-  debugPrint('[STARTUP] Launching TariffGuardApp instance...');
-  
   final container = ProviderContainer();
-  // Trigger AutoSyncService initialization
   container.read(autoSyncServiceProvider);
 
-  // 4. Ex dart run sqflite_common_ffi_web:setupecution hand-off to Riverpod and the UI loop
   runApp(
     UncontrolledProviderScope(
       container: container,
@@ -79,20 +68,91 @@ class TariffGuardApp extends StatelessWidget {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: TariffColors.navyDeep,
         fontFamily: 'Roboto',
-        appBarTheme: const AppBarTheme(
-          backgroundColor: TariffColors.navyMid,
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-        ),
       ),
-      initialRoute: '/dashboard',
+      // AuthGatekeeper manages the root of the app reactively.
+      // It will swap between AuthScreen, TermsConditionsScreen, and MainLayoutScreen automatically.
+      home: const AuthGatekeeper(), 
       routes: {
-        '/dashboard': (_) => const DashboardScreen(),
+        // We keep routes for sub-pages, but primary landing is handled by AuthGatekeeper.
         '/invoice-form': (_) => const InvoiceFormScreen(),
         '/audit-result': (_) => const AuditResultScreen(),
         '/audit-history': (_) => const AuditHistoryScreen(),
         '/trash': (_) => const TrashScreen(),
+        '/terms-view': (_) => const TermsConditionsScreen(isGatekeeperMode: false),
       },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/edit-audit') {
+          final audit = settings.arguments as HsAuditResultModel;
+          return MaterialPageRoute(builder: (_) => EditAuditScreen(audit: audit));
+        }
+        return null;
+      },
+    );
+  }
+}
+
+class AuthGatekeeper extends ConsumerWidget {
+  const AuthGatekeeper({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    final isRegistering = ref.watch(registrationInProgressProvider);
+
+    return authState.when(
+      data: (user) {
+        if (user != null && !isRegistering) {
+          return TermsGatekeeper(uid: user.uid);
+        }
+        return const AuthScreen();
+      },
+      loading: () => const _LoadingScaffold(),
+      error: (e, st) => _ErrorScaffold(message: 'Auth Error: $e'),
+    );
+  }
+}
+
+class TermsGatekeeper extends ConsumerWidget {
+  final String uid;
+  const TermsGatekeeper({super.key, required this.uid});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final termsAcceptedAsync = ref.watch(userAcceptedTermsProvider(uid));
+
+    return termsAcceptedAsync.when(
+      data: (hasAccepted) {
+        if (hasAccepted) {
+          return const MainLayoutScreen();
+        } else {
+          return const TermsConditionsScreen(isGatekeeperMode: true);
+        }
+      },
+      loading: () => const _LoadingScaffold(),
+      error: (e, st) => _ErrorScaffold(message: 'Compliance Error: $e'),
+    );
+  }
+}
+
+class _LoadingScaffold extends StatelessWidget {
+  const _LoadingScaffold();
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: TariffColors.navyDeep,
+      body: Center(child: CircularProgressIndicator(color: TariffColors.amberPending)),
+    );
+  }
+}
+
+class _ErrorScaffold extends StatelessWidget {
+  final String message;
+  const _ErrorScaffold({required this.message});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: TariffColors.navyDeep,
+      body: Center(child: Text(message, style: const TextStyle(color: Colors.white))),
     );
   }
 }

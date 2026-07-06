@@ -5,8 +5,9 @@ import 'package:hscode_auditor/features/dashboard/presentation/providers/connect
 import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/dashboard_stats_provider.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/audit_filter_provider.dart';
-import '../../../invoice/domain/entities/invoice_entity.dart';
-import '../../../search/presentation/pages/tariff_directory_screen.dart';
+import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
+import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
+import 'package:hscode_auditor/features/search/presentation/pages/tariff_directory_screen.dart';
 import 'package:hscode_auditor/core/util/auth_service.dart';
 import 'package:hscode_auditor/core/util/app_constants.dart';
 
@@ -32,8 +33,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _trashInvoice(InvoiceEntity invoice) async {
-    final repository = ref.read(invoiceRepositoryProvider);
-    await repository.softDeleteInvoice(invoice.id, true);
+    final repository = ref.read(inv.invoiceRepositoryProvider);
+    final user = ref.read(authStateProvider).value;
+    final userId = user?.uid ?? 'anonymous';
+    
+    await repository.softDeleteInvoice(invoice.id, userId, true);
     ref.read(invoiceListProvider.notifier).fetchInvoices();
 
     if (!mounted) return;
@@ -47,7 +51,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           label: 'UNDO',
           textColor: TariffColors.amberPending,
           onPressed: () async {
-            await repository.softDeleteInvoice(invoice.id, false);
+            await repository.softDeleteInvoice(invoice.id, userId, false);
             ref.read(invoiceListProvider.notifier).fetchInvoices();
           },
         ),
@@ -301,8 +305,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: InkWell(
           onTap: () => Navigator.of(context).pushNamed('/audit-result', arguments: invoice.id),
           onLongPress: () async {
-            final repository = ref.read(invoiceRepositoryProvider);
-            final audit = await repository.getAuditResultByInvoiceId(invoice.id);
+            final repository = ref.read(inv.invoiceRepositoryProvider);
+            final user = ref.read(authStateProvider).value;
+            final userId = user?.uid ?? 'anonymous';
+            final audit = await repository.getAuditResultByInvoiceId(invoice.id, userId);
             if (!mounted) return;
             if (audit != null) Navigator.of(context).pushNamed('/edit-audit', arguments: audit);
           },

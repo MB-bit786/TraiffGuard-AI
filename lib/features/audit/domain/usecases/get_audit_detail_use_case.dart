@@ -5,7 +5,7 @@ class GetAuditDetailUseCase {
   final AuditRepository repository;
   GetAuditDetailUseCase(this.repository);
 
-  Future<HsAuditResultEntity?> execute(String invoiceId) async {
-    return await repository.getAuditById(invoiceId);
+  Future<HsAuditResultEntity?> execute(String invoiceId, String userId) async {
+    return await repository.getAuditById(invoiceId, userId);
   }
 }

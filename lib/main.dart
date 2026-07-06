@@ -1,13 +1,9 @@
 // TariffGuard AI — Customs Export Intelligence Platform
 
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/pages/main_layout_screen.dart';
@@ -29,13 +25,6 @@ void main() async {
     await Firebase.initializeApp();
   } catch (e) {
     debugPrint('[STARTUP] Firebase Error: $e');
-  }
-
-  if (kIsWeb) {
-    databaseFactory = databaseFactoryFfiWeb;
-  } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
   }
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -69,11 +58,8 @@ class TariffGuardApp extends StatelessWidget {
         scaffoldBackgroundColor: TariffColors.navyDeep,
         fontFamily: 'Roboto',
       ),
-      // AuthGatekeeper manages the root of the app reactively.
-      // It will swap between AuthScreen, TermsConditionsScreen, and MainLayoutScreen automatically.
       home: const AuthGatekeeper(), 
       routes: {
-        // We keep routes for sub-pages, but primary landing is handled by AuthGatekeeper.
         '/invoice-form': (_) => const InvoiceFormScreen(),
         '/audit-result': (_) => const AuditResultScreen(),
         '/audit-history': (_) => const AuditHistoryScreen(),

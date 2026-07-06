@@ -2,43 +2,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../invoice/domain/entities/invoice_entity.dart';
 import '../../../../core/util/auth_service.dart';
 import '../../../invoice/domain/usecases/trash_use_cases.dart';
-import '../providers/invoice_list_provider.dart';
+import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
 
-final getTrashedInvoicesUseCaseProvider = Provider<GetTrashedInvoicesUseCase>((ref) {
-  final repository = ref.watch(invoiceRepositoryProvider);
-  return GetTrashedInvoicesUseCase(repository);
-});
-
-final restoreInvoiceUseCaseProvider = Provider<RestoreInvoiceUseCase>((ref) {
-  final repository = ref.watch(invoiceRepositoryProvider);
-  return RestoreInvoiceUseCase(repository);
-});
-
-final permanentlyDeleteInvoiceUseCaseProvider = Provider<PermanentlyDeleteInvoiceUseCase>((ref) {
-  final repository = ref.watch(invoiceRepositoryProvider);
-  return PermanentlyDeleteInvoiceUseCase(repository);
+final trashUseCasesProvider = Provider<TrashUseCases>((ref) {
+  final repository = ref.watch(inv.invoiceRepositoryProvider);
+  return TrashUseCases(repository);
 });
 
 final trashListProvider = StateNotifierProvider.autoDispose<TrashListNotifier, AsyncValue<List<InvoiceEntity>>>((ref) {
-  final getTrashedUseCase = ref.watch(getTrashedInvoicesUseCaseProvider);
-  final restoreUseCase = ref.watch(restoreInvoiceUseCaseProvider);
-  final permanentDeleteUseCase = ref.watch(permanentlyDeleteInvoiceUseCaseProvider);
+  final trashUseCases = ref.watch(trashUseCasesProvider);
   final user = ref.watch(authStateProvider).value;
   final userId = user?.uid ?? 'anonymous';
   
-  return TrashListNotifier(getTrashedUseCase, restoreUseCase, permanentDeleteUseCase, userId);
+  return TrashListNotifier(trashUseCases, userId);
 });
 
 class TrashListNotifier extends StateNotifier<AsyncValue<List<InvoiceEntity>>> {
-  final GetTrashedInvoicesUseCase _getTrashedUseCase;
-  final RestoreInvoiceUseCase _restoreUseCase;
-  final PermanentlyDeleteInvoiceUseCase _permanentDeleteUseCase;
+  final TrashUseCases _trashUseCases;
   final String _userId;
 
   TrashListNotifier(
-    this._getTrashedUseCase,
-    this._restoreUseCase,
-    this._permanentDeleteUseCase,
+    this._trashUseCases,
     this._userId,
   ) : super(const AsyncValue.loading()) {
     fetchTrashedInvoices();
@@ -47,7 +31,7 @@ class TrashListNotifier extends StateNotifier<AsyncValue<List<InvoiceEntity>>> {
   Future<void> fetchTrashedInvoices() async {
     state = const AsyncValue.loading();
     try {
-      final invoices = await _getTrashedUseCase.execute(_userId);
+      final invoices = await _trashUseCases.getTrashedInvoices(_userId);
       state = AsyncValue.data(invoices);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -58,7 +42,7 @@ class TrashListNotifier extends StateNotifier<AsyncValue<List<InvoiceEntity>>> {
 
   Future<void> restoreInvoice(String id) async {
     try {
-      await _restoreUseCase.execute(_userId, id);
+      await _trashUseCases.restoreInvoice(_userId, id);
       await fetchTrashedInvoices();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -67,7 +51,7 @@ class TrashListNotifier extends StateNotifier<AsyncValue<List<InvoiceEntity>>> {
 
   Future<void> permanentlyDeleteInvoice(String id) async {
     try {
-      await _permanentDeleteUseCase.execute(_userId, id);
+      await _trashUseCases.permanentlyDeleteInvoice(_userId, id);
       await fetchTrashedInvoices();
     } catch (e, st) {
       state = AsyncValue.error(e, st);

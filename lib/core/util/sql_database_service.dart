@@ -1,13 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Senior-grade SQL Service with failsafe fallback for hostile Web environments.
+/// Standard Mobile SQL Service using native sqflite.
 class SqlDatabaseService {
   Database? _database;
 
@@ -22,22 +20,8 @@ class SqlDatabaseService {
     debugPrint('[DATABASE] Starting initialization...');
     
     try {
-      if (kIsWeb) {
-        databaseFactory = databaseFactoryFfiWeb;
-        debugPrint('[DATABASE] Platform: Web (Attempting IndexedDB)');
-      } else {
-        if (defaultTargetPlatform == TargetPlatform.windows || 
-            defaultTargetPlatform == TargetPlatform.linux || 
-            defaultTargetPlatform == TargetPlatform.macOS) {
-          sqfliteFfiInit();
-          databaseFactory = databaseFactoryFfi;
-          debugPrint('[DATABASE] Platform: Desktop (FFI)');
-        }
-      }
+      final String path = p.join(await getDatabasesPath(), 'tariff_guard.db');
 
-      final String path = kIsWeb ? 'tariff_guard_v8.db' : p.join(await getDatabasesPath(), 'tariff_guard.db');
-
-      // Incrementing version to v8 to support User-based Data Isolation (userId)
       return await openDatabase(
         path,
         version: 8,
@@ -96,7 +80,6 @@ class SqlDatabaseService {
           if (oldVersion < 8) {
             debugPrint('[DATABASE] Upgrading schema to v8: Adding userId for data isolation...');
             try {
-              // Note: SQLite ALTER TABLE doesn't allow NOT NULL without a default value
               await db.execute('ALTER TABLE audit_results ADD COLUMN userId TEXT DEFAULT "anonymous"');
               await db.execute('ALTER TABLE invoices ADD COLUMN userId TEXT DEFAULT "anonymous"');
             } catch (e) {
@@ -106,16 +89,7 @@ class SqlDatabaseService {
         },
       );
     } catch (e) {
-      debugPrint('[DATABASE] ERROR during normal init: $e');
-      
-      if (kIsWeb) {
-        debugPrint('[DATABASE] FAILSAFE: Falling back to In-Memory mode for Web.');
-        return await openDatabase(
-          inMemoryDatabasePath,
-          version: 1,
-          onCreate: _onCreate,
-        );
-      }
+      debugPrint('[DATABASE] ERROR during init: $e');
       rethrow;
     }
   }

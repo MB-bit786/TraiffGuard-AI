@@ -1,29 +1,20 @@
 import '../entities/invoice_entity.dart';
 import '../repository/invoice_repository.dart';
 
-class GetTrashedInvoicesUseCase {
+class TrashUseCases {
   final InvoiceRepository repository;
-  GetTrashedInvoicesUseCase(this.repository);
 
-  Future<List<InvoiceEntity>> execute(String userId) async {
+  TrashUseCases(this.repository);
+
+  Future<List<InvoiceEntity>> getTrashedInvoices(String userId) async {
     return await repository.getTrashedInvoices(userId);
   }
-}
 
-class RestoreInvoiceUseCase {
-  final InvoiceRepository repository;
-  RestoreInvoiceUseCase(this.repository);
-
-  Future<void> execute(String userId, String invoiceId) async {
-    await repository.softDeleteInvoice(invoiceId, false);
+  Future<void> restoreInvoice(String userId, String invoiceId) async {
+    await repository.softDeleteInvoice(invoiceId, userId, false);
   }
-}
 
-class PermanentlyDeleteInvoiceUseCase {
-  final InvoiceRepository repository;
-  PermanentlyDeleteInvoiceUseCase(this.repository);
-
-  Future<void> execute(String userId, String invoiceId) async {
-    await repository.hardDeleteInvoice(invoiceId);
+  Future<void> permanentlyDeleteInvoice(String userId, String invoiceId) async {
+    await repository.hardDeleteInvoice(invoiceId, userId);
   }
 }

@@ -10,6 +10,7 @@ import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.d
 import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
 import 'package:hscode_auditor/core/util/auth_service.dart';
+import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
 
 class AutoSyncService {
   final InvoiceRepository _repository;
@@ -171,7 +172,7 @@ class AutoSyncService {
 }
 
 final autoSyncServiceProvider = Provider<AutoSyncService>((ref) {
-  final repository = ref.watch(invoiceRepositoryProvider);
+  final repository = ref.watch(inv.invoiceRepositoryProvider);
   final gemini = ref.watch(geminiAuditServiceProvider);
   final service = AutoSyncService(repository, gemini, ref);
 

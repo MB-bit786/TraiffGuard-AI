@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entities/invoice_entity.dart';
 import '../../../audit/domain/entities/hs_audit_result_entity.dart';
 import '../../domain/repository/invoice_repository.dart';
@@ -18,8 +17,6 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
     required this.remoteDataSource,
     required this.dbService,
   });
-
-  String _getCurrentUid() => FirebaseAuth.instance.currentUser?.uid ?? 'guest';
 
   @override
   Future<void> cacheInvoiceManifest(InvoiceEntity invoice, {HsAuditResultEntity? auditResult}) async {
@@ -62,24 +59,22 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
   }
 
   @override
-  Future<void> softDeleteInvoice(String id, bool delete) async {
-    final userId = _getCurrentUid();
+  Future<void> softDeleteInvoice(String id, String userId, bool delete) async {
     await localDataSource.updateInvoiceDeletedStatus(id, userId, delete);
     await localDataSource.updateAuditDeletedStatus(id, userId, delete);
     await remoteDataSource.updateDeletedStatus(id, userId, delete);
   }
 
   @override
-  Future<void> hardDeleteInvoice(String id) async {
-    final userId = _getCurrentUid();
+  Future<void> hardDeleteInvoice(String id, String userId) async {
     await localDataSource.hardDeleteInvoice(id, userId);
     await localDataSource.hardDeleteAudit(id, userId);
     await remoteDataSource.permanentlyDelete(id, userId);
   }
 
   @override
-  Future<HsAuditResultEntity?> getAuditResultByInvoiceId(String id) async {
-    return await localDataSource.getAuditResult(id, _getCurrentUid());
+  Future<HsAuditResultEntity?> getAuditResultByInvoiceId(String id, String userId) async {
+    return await localDataSource.getAuditResult(id, userId);
   }
 
   @override

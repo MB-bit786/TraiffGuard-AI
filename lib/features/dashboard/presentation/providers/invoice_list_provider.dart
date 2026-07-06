@@ -1,52 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../invoice/domain/entities/invoice_entity.dart';
-import '../../../../core/util/auth_service.dart';
-import '../../../invoice/domain/usecases/get_invoices_use_case.dart';
-import '../../../invoice/domain/usecases/sync_invoices_use_case.dart';
-import '../../../invoice/domain/repository/invoice_repository.dart';
-import '../../../invoice/data/repository/invoice_repository_impl.dart';
-import '../../../invoice/data/data_sources/invoice_local_data_source.dart';
-import '../../../invoice/data/data_sources/invoice_remote_data_source.dart';
-import '../../../../core/util/sql_database_service.dart';
-
-// Strict Clean Architecture: Dependency Injection logic
-final invoiceRepositoryProvider = Provider<InvoiceRepository>((ref) {
-  return InvoiceRepositoryImpl(
-    localDataSource: InvoiceLocalDataSourceImpl(ref.watch(sqlDatabaseServiceProvider)),
-    remoteDataSource: InvoiceRemoteDataSourceImpl(),
-    dbService: ref.watch(sqlDatabaseServiceProvider),
-  );
-});
-
-final getInvoicesUseCaseProvider = Provider<GetInvoicesUseCase>((ref) {
-  return GetInvoicesUseCase(ref.watch(invoiceRepositoryProvider));
-});
-
-final syncInvoicesUseCaseProvider = Provider<SyncInvoicesUseCase>((ref) {
-  return SyncInvoicesUseCase(ref.watch(invoiceRepositoryProvider), ref.watch(authServiceProvider));
-});
+import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
+import 'package:hscode_auditor/core/util/auth_service.dart';
+import 'package:hscode_auditor/features/invoice/domain/usecases/invoice_use_cases.dart';
+import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart';
 
 final invoiceListProvider = StateNotifierProvider.autoDispose<InvoiceListNotifier, AsyncValue<List<InvoiceEntity>>>((ref) {
-  final getInvoicesUseCase = ref.watch(getInvoicesUseCaseProvider);
-  final syncInvoicesUseCase = ref.watch(syncInvoicesUseCaseProvider);
+  final invoiceUseCases = ref.watch(invoiceUseCasesProvider);
   final user = ref.watch(authStateProvider).value;
   final userId = user?.uid ?? 'anonymous';
-  return InvoiceListNotifier(getInvoicesUseCase, syncInvoicesUseCase, userId);
+  return InvoiceListNotifier(invoiceUseCases, userId);
 });
 
 class InvoiceListNotifier extends StateNotifier<AsyncValue<List<InvoiceEntity>>> {
-  final GetInvoicesUseCase _getInvoicesUseCase;
-  final SyncInvoicesUseCase _syncInvoicesUseCase;
+  final InvoiceUseCases _invoiceUseCases;
   final String _userId;
 
-  InvoiceListNotifier(this._getInvoicesUseCase, this._syncInvoicesUseCase, this._userId) : super(const AsyncValue.loading()) {
+  InvoiceListNotifier(this._invoiceUseCases, this._userId) : super(const AsyncValue.loading()) {
     fetchInvoices();
   }
 
   Future<void> fetchInvoices() async {
     state = const AsyncValue.loading();
     try {
-      final invoices = await _getInvoicesUseCase.execute(_userId);
+      final invoices = await _invoiceUseCases.getInvoices(_userId);
       state = AsyncValue.data(invoices);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -56,7 +32,7 @@ class InvoiceListNotifier extends StateNotifier<AsyncValue<List<InvoiceEntity>>>
   Future<void> syncWithCloud() async {
     state = const AsyncValue.loading();
     try {
-      await _syncInvoicesUseCase.execute(_userId);
+      await _invoiceUseCases.syncInvoices(_userId);
       await fetchInvoices();
     } catch (e, st) {
       state = AsyncValue.error(e, st);

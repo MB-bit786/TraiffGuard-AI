@@ -37,9 +37,6 @@ dependencies:
   flutter_riverpod: ^2.6.1
   path: ^1.9.1
   sqflite: ^2.3.0
-  sqflite_common_ffi: ^2.3.0+2
-  sqflite_common_ffi_web: ^0.4.0
-  sqlite3_flutter_libs: ^0.5.20
   path_provider: ^2.1.2
   google_generative_ai: ^0.4.4
   connectivity_plus: ^6.0.3

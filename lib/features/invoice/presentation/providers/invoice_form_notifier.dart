@@ -2,12 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import '../../../audit/domain/entities/hs_audit_result_entity.dart';
-import '../../../dashboard/presentation/providers/connection_provider.dart';
-import 'package:hscode_auditor/core/util/gemini_audit_service.dart';
+import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
+import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
 import 'package:hscode_auditor/core/util/auth_service.dart';
-import '../../domain/usecases/process_customs_audit_use_case.dart';
-import '../../../dashboard/presentation/providers/invoice_list_provider.dart';
+import 'package:hscode_auditor/features/invoice/domain/usecases/invoice_use_cases.dart';
+import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart';
 
 class InvoiceFormState {
   final bool isAnalyzing;
@@ -34,10 +33,10 @@ class InvoiceFormState {
 }
 
 class InvoiceFormNotifier extends StateNotifier<InvoiceFormState> {
-  final ProcessCustomsAuditUseCase _processAuditUseCase;
+  final InvoiceUseCases _invoiceUseCases;
   final Ref _ref;
 
-  InvoiceFormNotifier(this._processAuditUseCase, this._ref) : super(const InvoiceFormState());
+  InvoiceFormNotifier(this._invoiceUseCases, this._ref) : super(const InvoiceFormState());
 
   Future<bool> processCustomsAudit({
     required String invoiceNumber,
@@ -87,7 +86,7 @@ class InvoiceFormNotifier extends StateNotifier<InvoiceFormState> {
       hsCode: hsCode,
     );
 
-    final response = await _processAuditUseCase.execute(params);
+    final response = await _invoiceUseCases.processAudit(params);
 
     state = state.copyWith(
       isAnalyzing: false,
@@ -99,13 +98,7 @@ class InvoiceFormNotifier extends StateNotifier<InvoiceFormState> {
   }
 }
 
-final processCustomsAuditUseCaseProvider = Provider<ProcessCustomsAuditUseCase>((ref) {
-  final repository = ref.watch(invoiceRepositoryProvider);
-  final aiService = ref.watch(geminiAuditServiceProvider);
-  return ProcessCustomsAuditUseCase(repository, aiService);
-});
-
 final invoiceFormNotifierProvider = StateNotifierProvider<InvoiceFormNotifier, InvoiceFormState>((ref) {
-  final useCase = ref.watch(processCustomsAuditUseCaseProvider);
-  return InvoiceFormNotifier(useCase, ref);
+  final useCases = ref.watch(invoiceUseCasesProvider);
+  return InvoiceFormNotifier(useCases, ref);
 });

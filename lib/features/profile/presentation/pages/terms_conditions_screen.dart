@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/core/util/auth_service.dart';
 import 'package:hscode_auditor/core/util/app_constants.dart';
@@ -25,7 +23,7 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
   /// Handles the formal decline of terms.
   /// Terminates the session and redirects the user to the gateway.
   Future<void> _handleDecline() async {
-    await FirebaseAuth.instance.signOut();
+    await ref.read(authUseCasesProvider).signOut();
     // Re-verification SnackBar
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -44,12 +42,10 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final authUseCases = ref.read(authUseCasesProvider);
+      final user = ref.read(authServiceProvider).currentUser;
       if (user != null) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .set({'hasAcceptedTerms': true}, SetOptions(merge: true));
+        await authUseCases.acceptTerms(user.uid);
         
         // Invalidate the provider to trigger a reactive rebuild in TermsGatekeeper.
         // This will automatically switch the root view to the Dashboard layout 

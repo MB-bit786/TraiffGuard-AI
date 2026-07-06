@@ -12,11 +12,11 @@ abstract class InvoiceRepository {
   
   Future<List<InvoiceEntity>> getTrashedInvoices(String userId);
   
-  Future<void> softDeleteInvoice(String id, bool delete);
+  Future<void> softDeleteInvoice(String id, String userId, bool delete);
   
-  Future<void> hardDeleteInvoice(String id);
+  Future<void> hardDeleteInvoice(String id, String userId);
   
-  Future<HsAuditResultEntity?> getAuditResultByInvoiceId(String id);
+  Future<HsAuditResultEntity?> getAuditResultByInvoiceId(String id, String userId);
   
   Future<List<Map<String, dynamic>>> searchTariffMaster(String query);
 }

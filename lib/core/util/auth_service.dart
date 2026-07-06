@@ -7,6 +7,8 @@ import 'package:hscode_auditor/core/util/sql_database_service.dart';
 import '../../features/auth/domain/repository/auth_repository.dart';
 import '../../features/auth/data/repository/firebase_auth_repository.dart';
 
+import '../../features/auth/domain/usecases/auth_use_cases.dart';
+
 class AuthService {
   final AuthRepository _repository;
   final SqlDatabaseService _dbService;
@@ -73,6 +75,11 @@ class AuthService {
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return FirebaseAuthRepository();
+});
+
+final authUseCasesProvider = Provider<AuthUseCases>((ref) {
+  final repository = ref.watch(authRepositoryProvider);
+  return AuthUseCases(repository);
 });
 
 final authServiceProvider = Provider<AuthService>((ref) {

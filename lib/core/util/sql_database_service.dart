@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../constants/db_constants.dart';
 
 /// Standard Mobile SQL Service using native sqflite.
 class SqlDatabaseService {
@@ -24,67 +25,16 @@ class SqlDatabaseService {
 
       return await openDatabase(
         path,
-        version: 8,
+        version: 9,
         onCreate: _onCreate,
         onUpgrade: (db, oldVersion, newVersion) async {
-          if (oldVersion < 2) {
-            debugPrint('[DATABASE] Upgrading schema to v2...');
-            await db.execute('DROP TABLE IF EXISTS static_hs_codes');
-            await db.execute('CREATE TABLE static_hs_codes (hs_code TEXT PRIMARY KEY, description TEXT)');
-            _seedTariffMaster(db);
-          }
-          if (oldVersion < 3) {
-            debugPrint('[DATABASE] Upgrading schema to v3: Adding consignee to audit_results...');
-            try {
-              await db.execute('ALTER TABLE audit_results ADD COLUMN consignee TEXT');
-            } catch (e) {
-              debugPrint('[DATABASE] Migration warning (consignee): $e');
-            }
-          }
-          if (oldVersion < 4) {
-            debugPrint('[DATABASE] Upgrading schema to v4: Adding cargoDescription to audit_results...');
-            try {
-              await db.execute('ALTER TABLE audit_results ADD COLUMN cargoDescription TEXT');
-            } catch (e) {
-              debugPrint('[DATABASE] Migration warning (cargoDescription): $e');
-            }
-          }
-          if (oldVersion < 5) {
-            debugPrint('[DATABASE] Upgrading schema to v5: Adding isDeleted flag...');
-            try {
-              await db.execute('ALTER TABLE audit_results ADD COLUMN isDeleted INTEGER DEFAULT 0');
-              await db.execute('ALTER TABLE invoices ADD COLUMN isDeleted INTEGER DEFAULT 0');
-            } catch (e) {
-              debugPrint('[DATABASE] Migration warning (isDeleted): $e');
-            }
-          }
-          if (oldVersion < 6) {
-            debugPrint('[DATABASE] Upgrading schema to v6: Adding country metrics for sync tracking...');
-            try {
-              await db.execute('ALTER TABLE audit_results ADD COLUMN originCountry TEXT DEFAULT "IN"');
-              await db.execute('ALTER TABLE audit_results ADD COLUMN destinationCountry TEXT DEFAULT "US"');
-            } catch (e) {
-              debugPrint('[DATABASE] Migration warning (country fields): $e');
-            }
-          }
-          if (oldVersion < 7) {
-            debugPrint('[DATABASE] Upgrading schema to v7: Adding logistics metrics...');
-            try {
-              await db.execute('ALTER TABLE audit_results ADD COLUMN totalWeightKg TEXT DEFAULT "0"');
-              await db.execute('ALTER TABLE audit_results ADD COLUMN plannedMonth TEXT DEFAULT "January"');
-              await db.execute('ALTER TABLE audit_results ADD COLUMN shippingMethod TEXT DEFAULT "Sea Freight"');
-            } catch (e) {
-              debugPrint('[DATABASE] Migration warning (logistics fields): $e');
-            }
-          }
-          if (oldVersion < 8) {
-            debugPrint('[DATABASE] Upgrading schema to v8: Adding userId for data isolation...');
-            try {
-              await db.execute('ALTER TABLE audit_results ADD COLUMN userId TEXT DEFAULT "anonymous"');
-              await db.execute('ALTER TABLE invoices ADD COLUMN userId TEXT DEFAULT "anonymous"');
-            } catch (e) {
-              debugPrint('[DATABASE] Migration warning (userId): $e');
-            }
+          if (oldVersion < 9) {
+            debugPrint('[DATABASE] Upgrading schema to v9: Consolidating tables...');
+            // In a production app, we would perform a data migration here.
+            // For development, we drop and recreate to ensure schema integrity.
+            await db.execute('DROP TABLE IF EXISTS audit_results');
+            await db.execute('DROP TABLE IF EXISTS invoices');
+            await _createInvoicesTable(db);
           }
         },
       );
@@ -94,63 +44,52 @@ class SqlDatabaseService {
     }
   }
 
-  /// Shared schema creation logic
   Future<void> _onCreate(Database db, int version) async {
     debugPrint('[DATABASE] Creating schemas...');
     
-    await db.execute('''
-      CREATE TABLE invoices (
-        id TEXT PRIMARY KEY,
-        userId TEXT NOT NULL,
-        consignee TEXT,
-        cargoDescription TEXT,
-        hsCode TEXT,
-        dutyRate TEXT,
-        status TEXT,
-        timestamp TEXT,
-        isDeleted INTEGER DEFAULT 0
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE audit_results (
-        invoiceNumber TEXT PRIMARY KEY,
-        userId TEXT NOT NULL,
-        hsCode TEXT,
-        hsDescription TEXT,
-        chapter TEXT,
-        consignee TEXT,
-        cargoDescription TEXT,
-        standardDutyRate TEXT,
-        vatRate TEXT,
-        totalTaxBurden TEXT,
-        declaredValue TEXT,
-        currency TEXT,
-        estimatedDutyAmount TEXT,
-        confidenceScore INTEGER,
-        complianceWarnings TEXT,
-        requiredDocuments TEXT,
-        auditTimestamp TEXT,
-        riskLevel TEXT,
-        originCountry TEXT DEFAULT "IN",
-        destinationCountry TEXT DEFAULT "US",
-        totalWeightKg TEXT DEFAULT "0",
-        plannedMonth TEXT DEFAULT "January",
-        shippingMethod TEXT DEFAULT "Sea Freight",
-        isDeleted INTEGER DEFAULT 0,
-        FOREIGN KEY (invoiceNumber) REFERENCES invoices (id)
-      )
-    ''');
+    await _createInvoicesTable(db);
 
     await db.execute('''
       CREATE TABLE static_hs_codes (
-        hs_code TEXT PRIMARY KEY,
-        description TEXT
+        ${DbConstants.colStaticHsCode} TEXT PRIMARY KEY,
+        ${DbConstants.colDescription} TEXT
       )
     ''');
     
     debugPrint('[DATABASE] Schemas created. Seeding in background...');
     _seedTariffMaster(db);
+  }
+
+  Future<void> _createInvoicesTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE invoices (
+        ${DbConstants.colId} TEXT PRIMARY KEY,
+        ${DbConstants.colUserId} TEXT NOT NULL,
+        ${DbConstants.colConsignee} TEXT,
+        ${DbConstants.colCargoDescription} TEXT,
+        ${DbConstants.colHsCode} TEXT,
+        ${DbConstants.colHsDescription} TEXT,
+        ${DbConstants.colChapter} TEXT,
+        ${DbConstants.colStandardDutyRate} TEXT,
+        ${DbConstants.colVatRate} TEXT,
+        ${DbConstants.colTotalTaxBurden} TEXT,
+        ${DbConstants.colDeclaredValue} TEXT,
+        ${DbConstants.colCurrency} TEXT,
+        ${DbConstants.colEstimatedDutyAmount} TEXT,
+        ${DbConstants.colConfidenceScore} INTEGER,
+        ${DbConstants.colComplianceWarnings} TEXT,
+        ${DbConstants.colRequiredDocuments} TEXT,
+        ${DbConstants.colStatus} TEXT,
+        ${DbConstants.colTimestamp} TEXT,
+        ${DbConstants.colRiskLevel} TEXT,
+        ${DbConstants.colOriginCountry} TEXT DEFAULT "IN",
+        ${DbConstants.colDestinationCountry} TEXT DEFAULT "US",
+        ${DbConstants.colTotalWeightKg} TEXT DEFAULT "0",
+        ${DbConstants.colPlannedMonth} TEXT DEFAULT "January",
+        ${DbConstants.colShippingMethod} TEXT DEFAULT "Sea Freight",
+        ${DbConstants.colIsDeleted} INTEGER DEFAULT 0
+      )
+    ''');
   }
 
   Future<void> _seedTariffMaster(Database db) async {
@@ -168,10 +107,10 @@ class SqlDatabaseService {
       final batch = db.batch();
       for (var item in data) {
         batch.insert(
-          'static_hs_codes',
-          {
-            'hs_code': item['hs_code'] ?? '',
-            'description': item['description'] ?? '',
+        'static_hs_codes',
+        {
+            DbConstants.colStaticHsCode: item['hs_code'] ?? '',
+            DbConstants.colDescription: item['description'] ?? '',
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );

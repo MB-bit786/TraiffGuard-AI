@@ -107,6 +107,7 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
       requiredDocuments: e.requiredDocuments,
       auditTimestamp: e.auditTimestamp,
       riskLevel: e.riskLevel,
+      status: e.status,
       originCountry: e.originCountry,
       destinationCountry: e.destinationCountry,
       totalWeightKg: e.totalWeightKg,

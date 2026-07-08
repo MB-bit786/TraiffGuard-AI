@@ -23,6 +23,7 @@ class HsAuditResultEntity {
     required this.requiredDocuments,
     required this.auditTimestamp,
     required this.riskLevel,
+    required this.status,
     this.originCountry = 'IN',
     this.destinationCountry = 'US',
     this.totalWeightKg = '0',
@@ -49,6 +50,7 @@ class HsAuditResultEntity {
   final List<String> requiredDocuments;
   final String auditTimestamp;
   final RiskLevel riskLevel;
+  final String status;
   final String originCountry;
   final String destinationCountry;
   final String totalWeightKg;

@@ -67,6 +67,7 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
         requiredDocuments: widget.audit.requiredDocuments,
         auditTimestamp: widget.audit.auditTimestamp,
         riskLevel: widget.audit.riskLevel,
+        status: widget.audit.status,
         originCountry: widget.audit.originCountry,
         destinationCountry: widget.audit.destinationCountry,
         totalWeightKg: widget.audit.totalWeightKg,

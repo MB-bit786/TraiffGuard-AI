@@ -116,6 +116,7 @@ class AutoSyncService {
             riskLevel: aiData['riskLevel'] != null
                 ? _parseRiskLevel(aiData['riskLevel'].toString())
                 : RiskLevel.medium,
+            status: 'synced',
             auditTimestamp: DateTime.now().toString().split('.').first,
             originCountry: draft.originCountry,
             destinationCountry: draft.destinationCountry,

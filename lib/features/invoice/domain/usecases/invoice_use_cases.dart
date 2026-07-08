@@ -92,6 +92,7 @@ class InvoiceUseCases {
       estimatedDutyAmount: estimatedLocalDuty.toStringAsFixed(2),
       confidenceScore: 0,
       riskLevel: RiskLevel.medium,
+      status: 'offlineDraft',
       auditTimestamp: timestamp,
       originCountry: params.originCountry,
       destinationCountry: params.destCountry,
@@ -164,6 +165,7 @@ class InvoiceUseCases {
             : (aiData['confidenceScore'] is num && ((aiData['confidenceScore'] as num) > 80 || (aiData['confidenceScore'] as num) > 0.8))
                 ? RiskLevel.low
                 : RiskLevel.medium,
+        status: 'synced',
         auditTimestamp: timestamp,
         originCountry: params.originCountry,
         destinationCountry: params.destCountry,

@@ -1,7 +1,9 @@
 import 'package:sqflite/sqflite.dart';
 import '../../../../core/util/sql_database_service.dart';
+import 'package:hscode_auditor/core/constants/db_constants.dart';
 import '../models/invoice_model.dart';
 import '../../../audit/data/models/hs_audit_result_model.dart';
+import 'dart:convert';
 
 abstract class InvoiceLocalDataSource {
   Future<void> cacheInvoice(InvoiceModel invoice);
@@ -24,13 +26,57 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
   @override
   Future<void> cacheInvoice(InvoiceModel invoice) async {
     final db = await _dbService.database;
-    await db.insert('invoices', invoice.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert(
+      'invoices',
+      {
+        DbConstants.colId: invoice.id,
+        DbConstants.colUserId: invoice.userId,
+        DbConstants.colConsignee: invoice.consignee,
+        DbConstants.colCargoDescription: invoice.cargoDescription,
+        DbConstants.colHsCode: invoice.hsCode,
+        DbConstants.colStandardDutyRate: invoice.dutyRate,
+        DbConstants.colStatus: invoice.status,
+        DbConstants.colTimestamp: invoice.timestamp,
+        DbConstants.colIsDeleted: invoice.isDeleted ? 1 : 0,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   @override
   Future<void> cacheAuditResult(HsAuditResultModel result) async {
     final db = await _dbService.database;
-    await db.insert('audit_results', result.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert(
+      'invoices',
+      {
+        DbConstants.colId: result.invoiceNumber,
+        DbConstants.colUserId: result.userId,
+        DbConstants.colConsignee: result.consignee,
+        DbConstants.colCargoDescription: result.cargoDescription,
+        DbConstants.colHsCode: result.hsCode,
+        DbConstants.colHsDescription: result.hsDescription,
+        DbConstants.colChapter: result.chapter,
+        DbConstants.colStandardDutyRate: result.standardDutyRate,
+        DbConstants.colVatRate: result.vatRate,
+        DbConstants.colTotalTaxBurden: result.totalTaxBurden,
+        DbConstants.colDeclaredValue: result.declaredValue,
+        DbConstants.colCurrency: result.currency,
+        DbConstants.colEstimatedDutyAmount: result.estimatedDutyAmount,
+        DbConstants.colConfidenceScore: result.confidenceScore,
+        DbConstants.colComplianceWarnings: json.encode(result.complianceWarnings),
+        DbConstants.colRequiredDocuments: json.encode(result.requiredDocuments),
+        DbConstants.colTimestamp: result.auditTimestamp,
+        DbConstants.colStatus: result.status,
+        DbConstants.colRiskLevel: result.riskLevel.name,
+        DbConstants.colOriginCountry: result.originCountry,
+        DbConstants.colDestinationCountry: result.destinationCountry,
+        DbConstants.colTotalWeightKg: result.totalWeightKg,
+        DbConstants.colPlannedMonth: result.plannedMonth,
+        DbConstants.colShippingMethod: result.shippingMethod,
+        DbConstants.colIsDeleted: result.isDeleted ? 1 : 0,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   @override
@@ -38,22 +84,22 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
     final db = await _dbService.database;
     final maps = await db.query(
       'invoices',
-      where: 'isDeleted = 0 AND userId = ?',
+      where: '${DbConstants.colIsDeleted} = 0 AND ${DbConstants.colUserId} = ?',
       whereArgs: [userId],
-      orderBy: 'timestamp DESC',
+      orderBy: '${DbConstants.colTimestamp} DESC',
     );
-    return maps.map((m) => InvoiceModel.fromMap(m)).toList();
+    return maps.map((m) => _mapToInvoiceModel(m)).toList();
   }
 
   @override
   Future<List<HsAuditResultModel>> getPendingDraftResults(String userId) async {
     final db = await _dbService.database;
     final maps = await db.query(
-      'audit_results',
-      where: '(confidenceScore = 0 OR hsCode LIKE "%(Offline Draft)%") AND isDeleted = 0 AND userId = ?',
+      'invoices',
+      where: '(${DbConstants.colConfidenceScore} = 0 OR ${DbConstants.colHsCode} LIKE "%(Offline Draft)%") AND ${DbConstants.colIsDeleted} = 0 AND ${DbConstants.colUserId} = ?',
       whereArgs: [userId],
     );
-    return maps.map((m) => HsAuditResultModel.fromMap(m)).toList();
+    return maps.map((m) => _mapToHsAuditResultModel(m)).toList();
   }
 
   @override
@@ -61,11 +107,11 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
     final db = await _dbService.database;
     final maps = await db.query(
       'invoices',
-      where: 'isDeleted = 1 AND userId = ?',
+      where: '${DbConstants.colIsDeleted} = 1 AND ${DbConstants.colUserId} = ?',
       whereArgs: [userId],
-      orderBy: 'timestamp DESC',
+      orderBy: '${DbConstants.colTimestamp} DESC',
     );
-    return maps.map((m) => InvoiceModel.fromMap(m)).toList();
+    return maps.map((m) => _mapToInvoiceModel(m)).toList();
   }
 
   @override
@@ -73,44 +119,86 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
     final db = await _dbService.database;
     await db.update(
       'invoices',
-      {'isDeleted': isDeleted ? 1 : 0},
-      where: 'id = ? AND userId = ?',
+      {DbConstants.colIsDeleted: isDeleted ? 1 : 0},
+      where: '${DbConstants.colId} = ? AND ${DbConstants.colUserId} = ?',
       whereArgs: [id, userId],
     );
   }
 
   @override
   Future<void> updateAuditDeletedStatus(String id, String userId, bool isDeleted) async {
-    final db = await _dbService.database;
-    await db.update(
-      'audit_results',
-      {'isDeleted': isDeleted ? 1 : 0},
-      where: 'invoiceNumber = ? AND userId = ?',
-      whereArgs: [id, userId],
-    );
+    // Both map to the same table now
+    await updateInvoiceDeletedStatus(id, userId, isDeleted);
   }
 
   @override
   Future<void> hardDeleteInvoice(String id, String userId) async {
     final db = await _dbService.database;
-    await db.delete('invoices', where: 'id = ? AND userId = ?', whereArgs: [id, userId]);
+    await db.delete(
+      'invoices',
+      where: '${DbConstants.colId} = ? AND ${DbConstants.colUserId} = ?',
+      whereArgs: [id, userId],
+    );
   }
 
   @override
   Future<void> hardDeleteAudit(String id, String userId) async {
-    final db = await _dbService.database;
-    await db.delete('audit_results', where: 'invoiceNumber = ? AND userId = ?', whereArgs: [id, userId]);
+    await hardDeleteInvoice(id, userId);
   }
 
   @override
   Future<HsAuditResultModel?> getAuditResult(String id, String userId) async {
     final db = await _dbService.database;
     final maps = await db.query(
-      'audit_results',
-      where: 'invoiceNumber = ? AND userId = ?',
+      'invoices',
+      where: '${DbConstants.colId} = ? AND ${DbConstants.colUserId} = ?',
       whereArgs: [id, userId],
     );
     if (maps.isEmpty) return null;
-    return HsAuditResultModel.fromMap(maps.first);
+    return _mapToHsAuditResultModel(maps.first);
+  }
+
+  InvoiceModel _mapToInvoiceModel(Map<String, dynamic> map) {
+    return InvoiceModel(
+      id: map[DbConstants.colId] as String,
+      userId: map[DbConstants.colUserId] as String? ?? 'anonymous',
+      consignee: map[DbConstants.colConsignee] as String? ?? '',
+      cargoDescription: map[DbConstants.colCargoDescription] as String? ?? '',
+      hsCode: map[DbConstants.colHsCode] as String? ?? '',
+      dutyRate: map[DbConstants.colStandardDutyRate] as String? ?? '',
+      status: map[DbConstants.colStatus] as String? ?? '',
+      timestamp: map[DbConstants.colTimestamp] as String? ?? '',
+      isDeleted: (map[DbConstants.colIsDeleted] as int? ?? 0) == 1,
+    );
+  }
+
+  HsAuditResultModel _mapToHsAuditResultModel(Map<String, dynamic> map) {
+    return HsAuditResultModel(
+      hsCode: map[DbConstants.colHsCode] as String? ?? '',
+      userId: map[DbConstants.colUserId] as String? ?? 'anonymous',
+      hsDescription: map[DbConstants.colHsDescription] as String? ?? '',
+      chapter: map[DbConstants.colChapter] as String? ?? '',
+      consignee: map[DbConstants.colConsignee] as String? ?? '',
+      invoiceNumber: map[DbConstants.colId] as String,
+      cargoDescription: map[DbConstants.colCargoDescription] as String? ?? '',
+      standardDutyRate: map[DbConstants.colStandardDutyRate] as String? ?? '',
+      vatRate: map[DbConstants.colVatRate] as String? ?? '',
+      totalTaxBurden: map[DbConstants.colTotalTaxBurden] as String? ?? '',
+      declaredValue: map[DbConstants.colDeclaredValue] as String? ?? '',
+      currency: map[DbConstants.colCurrency] as String? ?? '',
+      estimatedDutyAmount: map[DbConstants.colEstimatedDutyAmount] as String? ?? '',
+      confidenceScore: map[DbConstants.colConfidenceScore] as int? ?? 0,
+      complianceWarnings: List<String>.from(json.decode(map[DbConstants.colComplianceWarnings] as String? ?? '[]')),
+      requiredDocuments: List<String>.from(json.decode(map[DbConstants.colRequiredDocuments] as String? ?? '[]')),
+      auditTimestamp: map[DbConstants.colTimestamp] as String? ?? '',
+      riskLevel: HsAuditResultModel.parseRiskLevel(map[DbConstants.colRiskLevel] as String? ?? 'medium'),
+      status: map[DbConstants.colStatus] as String? ?? 'synced',
+      originCountry: map[DbConstants.colOriginCountry] as String? ?? 'IN',
+      destinationCountry: map[DbConstants.colDestinationCountry] as String? ?? 'US',
+      totalWeightKg: map[DbConstants.colTotalWeightKg] as String? ?? '0',
+      plannedMonth: map[DbConstants.colPlannedMonth] as String? ?? 'January',
+      shippingMethod: map[DbConstants.colShippingMethod] as String? ?? 'Sea Freight',
+      isDeleted: (map[DbConstants.colIsDeleted] as int? ?? 0) == 1,
+    );
   }
 }

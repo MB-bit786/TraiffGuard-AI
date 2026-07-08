@@ -4,9 +4,9 @@ import 'package:sqflite/sqflite.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/core/util/sql_database_service.dart';
+import 'package:hscode_auditor/core/constants/db_constants.dart';
 import '../../features/auth/domain/repository/auth_repository.dart';
 import '../../features/auth/data/repository/firebase_auth_repository.dart';
-
 import '../../features/auth/domain/usecases/auth_use_cases.dart';
 
 class AuthService {
@@ -32,18 +32,38 @@ class AuthService {
       await db.transaction((txn) async {
         for (var doc in snapshot.docs) {
           final data = doc.data();
-          await txn.insert('audit_results', data, conflictAlgorithm: ConflictAlgorithm.replace);
-          await txn.insert('invoices', {
-            'id': data['invoiceNumber'],
-            'userId': data['userId'],
-            'consignee': data['consignee'],
-            'cargoDescription': data['cargoDescription'],
-            'hsCode': data['hsCode'],
-            'dutyRate': '${data['standardDutyRate']} Duty',
-            'status': 'synced',
-            'timestamp': data['auditTimestamp'],
-            'isDeleted': data['isDeleted'] ?? 0,
-          }, conflictAlgorithm: ConflictAlgorithm.replace);
+          
+          await txn.insert(
+            'invoices',
+            {
+              DbConstants.colId: data['invoiceNumber'],
+              DbConstants.colUserId: data['userId'],
+              DbConstants.colConsignee: data['consignee'],
+              DbConstants.colCargoDescription: data['cargoDescription'],
+              DbConstants.colHsCode: data['hsCode'],
+              DbConstants.colHsDescription: data['hsDescription'],
+              DbConstants.colChapter: data['chapter'],
+              DbConstants.colStandardDutyRate: data['standardDutyRate'],
+              DbConstants.colVatRate: data['vatRate'],
+              DbConstants.colTotalTaxBurden: data['totalTaxBurden'],
+              DbConstants.colDeclaredValue: data['declaredValue'],
+              DbConstants.colCurrency: data['currency'],
+              DbConstants.colEstimatedDutyAmount: data['estimatedDutyAmount'],
+              DbConstants.colConfidenceScore: data['confidenceScore'],
+              DbConstants.colComplianceWarnings: data['complianceWarnings'],
+              DbConstants.colRequiredDocuments: data['requiredDocuments'],
+              DbConstants.colStatus: 'synced',
+              DbConstants.colTimestamp: data['auditTimestamp'],
+              DbConstants.colRiskLevel: data['riskLevel'],
+              DbConstants.colOriginCountry: data['originCountry'],
+              DbConstants.colDestinationCountry: data['destinationCountry'],
+              DbConstants.colTotalWeightKg: data['totalWeightKg'],
+              DbConstants.colPlannedMonth: data['plannedMonth'],
+              DbConstants.colShippingMethod: data['shippingMethod'],
+              DbConstants.colIsDeleted: data['isDeleted'] ?? 0,
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
         }
       });
       debugPrint('[AUTH] Hydration complete: ${snapshot.docs.length} records restored.');

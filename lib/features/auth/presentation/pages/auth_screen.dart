@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hscode_auditor/core/util/auth_service.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
+import 'package:hscode_auditor/core/constants/auth_error_constants.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -62,25 +63,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
   }
 
   void _handleAuthException(FirebaseAuthException e) {
-    String message = 'Connection failure. Please try again later.';
-
-    switch (e.code) {
-      case 'email-already-in-use':
-        message = '⚠️ This email address is already registered to a corporate account.';
-        break;
-      case 'invalid-credential':
-      case 'wrong-password':
-      case 'user-not-found':
-      case 'invalid-email':
-        message = '❌ Invalid email or password credentials. Please try again.';
-        break;
-      case 'weak-password':
-        message = '⚠️ Password must be stronger. Use letters, numbers, and symbols.';
-        break;
-      case 'network-request-failed':
-        message = '🌐 System offline. Check your network infrastructure.';
-        break;
-    }
+    final String message = AuthErrorConstants.getMessage(e.code);
 
     if (mounted) {
       ScaffoldMessenger.of(context).clearSnackBars();

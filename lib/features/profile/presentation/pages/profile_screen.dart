@@ -7,7 +7,7 @@ import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/core/util/auth_service.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/dashboard_stats_provider.dart';
-import 'package:hscode_auditor/core/util/app_constants.dart';
+import 'package:hscode_auditor/core/constants/app_constants.dart';
 
 /// Premium UI Engineer: Corporate Profile & Account Security.
 /// Displays authenticated user metadata and historical sync telemetry.

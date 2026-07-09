@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/core/util/auth_service.dart';
-import 'package:hscode_auditor/core/util/app_constants.dart';
+import 'package:hscode_auditor/core/constants/app_constants.dart';
 
 /// Features high-fidelity legal documentation with interactive acceptance workflows.
 class TermsConditionsScreen extends ConsumerStatefulWidget {

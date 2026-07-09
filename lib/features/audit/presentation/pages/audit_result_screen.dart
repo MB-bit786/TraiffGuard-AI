@@ -5,7 +5,7 @@ import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import '../../domain/entities/hs_audit_result_entity.dart';
 import '../providers/audit_detail_provider.dart';
 import 'package:hscode_auditor/core/util/pdf_export_service.dart';
-import 'package:hscode_auditor/core/util/app_constants.dart';
+import 'package:hscode_auditor/core/constants/app_constants.dart';
 
 class AuditResultScreen extends ConsumerWidget {
   const AuditResultScreen({
@@ -19,31 +19,41 @@ class AuditResultScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final arg = ModalRoute.of(context)?.settings.arguments;
     
-    if (result != null) return _buildScaffold(context, result!);
-    if (arg is HsAuditResultEntity) return _buildScaffold(context, arg);
-
+    // Determine the active invoice ID to watch the database reactively.
+    String? activeInvoiceId;
     if (arg is String) {
-      final detailAsync = ref.watch(auditDetailProvider(arg));
+      activeInvoiceId = arg;
+    } else if (arg is HsAuditResultEntity) {
+      activeInvoiceId = arg.invoiceNumber;
+    } else if (result != null) {
+      activeInvoiceId = result!.invoiceNumber;
+    }
+
+    if (activeInvoiceId != null) {
+      final detailAsync = ref.watch(auditDetailProvider(activeInvoiceId));
       
       return detailAsync.when(
         data: (fetchedResult) {
           if (fetchedResult == null) {
-            return _buildErrorScaffold(context, 'Audit report not found in database.');
+            // Fallback if not in DB yet (e.g. immediate result from form)
+            if (arg is HsAuditResultEntity) return _buildScaffold(context, ref, arg);
+            if (result != null) return _buildScaffold(context, ref, result!);
+            return _buildErrorScaffold(context, 'Audit report not found.');
           }
-          return _buildScaffold(context, fetchedResult);
+          return _buildScaffold(context, ref, fetchedResult);
         },
         loading: () => const Scaffold(
           backgroundColor: TariffColors.navyDeep,
           body: Center(child: CircularProgressIndicator(color: TariffColors.amberPending)),
         ),
-        error: (err, _) => _buildErrorScaffold(context, 'Error loading report: $err'),
+        error: (err, _) => _buildErrorScaffold(context, 'Error: $err'),
       );
     }
 
     return _buildErrorScaffold(context, 'Invalid audit report state.');
   }
 
-  Widget _buildScaffold(BuildContext context, HsAuditResultEntity finalResult) {
+  Widget _buildScaffold(BuildContext context, WidgetRef ref, HsAuditResultEntity finalResult) {
     return Scaffold(
       backgroundColor: TariffColors.navyDeep,
       appBar: _buildAppBar(context, finalResult),

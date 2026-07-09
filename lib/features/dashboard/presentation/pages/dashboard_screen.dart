@@ -9,7 +9,7 @@ import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.d
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
 import 'package:hscode_auditor/features/search/presentation/pages/tariff_directory_screen.dart';
 import 'package:hscode_auditor/core/util/auth_service.dart';
-import 'package:hscode_auditor/core/util/app_constants.dart';
+import 'package:hscode_auditor/core/constants/app_constants.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});

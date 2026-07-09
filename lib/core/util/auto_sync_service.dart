@@ -49,7 +49,7 @@ class AutoSyncService {
     });
 
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      final isOnline = _ref.read(connectionProvider).isOnline;
+      final isOnline = _ref.read(connectionProvider).effectivelyOnline;
       if (isOnline) {
         syncPendingAudits();
       }
@@ -58,7 +58,7 @@ class AutoSyncService {
 
   Future<void> syncPendingAudits() async {
     if (_isSyncing) return;
-    final isOnline = _ref.read(connectionProvider).isOnline;
+    final isOnline = _ref.read(connectionProvider).effectivelyOnline;
     if (!isOnline) return;
     final user = _ref.read(authServiceProvider).currentUser;
     if (user == null) return;
@@ -178,7 +178,7 @@ final autoSyncServiceProvider = Provider<AutoSyncService>((ref) {
   final service = AutoSyncService(repository, gemini, ref);
 
   ref.listen(connectionProvider, (previous, next) {
-    if (next.isOnline && (previous == null || !previous.isOnline)) {
+    if (next.effectivelyOnline && (previous == null || !previous.effectivelyOnline)) {
       service.syncPendingAudits();
     }
   });

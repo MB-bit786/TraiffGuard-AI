@@ -26,9 +26,18 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
   @override
   Future<void> cacheInvoice(InvoiceModel invoice) async {
     final db = await _dbService.database;
-    await db.insert(
-      'invoices',
-      {
+    
+    // SMART CACHE: We use a transaction to check if the record exists.
+    // If it exists, we only update manifest fields to avoid wiping high-fidelity AI data.
+    await db.transaction((txn) async {
+      final List<Map<String, dynamic>> existing = await txn.query(
+        'invoices',
+        columns: [DbConstants.colId],
+        where: '${DbConstants.colId} = ?',
+        whereArgs: [invoice.id],
+      );
+
+      final manifestData = {
         DbConstants.colId: invoice.id,
         DbConstants.colUserId: invoice.userId,
         DbConstants.colConsignee: invoice.consignee,
@@ -38,14 +47,29 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
         DbConstants.colStatus: invoice.status,
         DbConstants.colTimestamp: invoice.timestamp,
         DbConstants.colIsDeleted: invoice.isDeleted ? 1 : 0,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+      };
+
+      if (existing.isNotEmpty) {
+        await txn.update(
+          'invoices',
+          manifestData,
+          where: '${DbConstants.colId} = ?',
+          whereArgs: [invoice.id],
+        );
+      } else {
+        await txn.insert(
+          'invoices',
+          manifestData,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
   }
 
   @override
   Future<void> cacheAuditResult(HsAuditResultModel result) async {
     final db = await _dbService.database;
+    // Audit results are high-fidelity, so we can use REPLACE safely here as they contain all columns.
     await db.insert(
       'invoices',
       {
@@ -127,7 +151,6 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
 
   @override
   Future<void> updateAuditDeletedStatus(String id, String userId, bool isDeleted) async {
-    // Both map to the same table now
     await updateInvoiceDeletedStatus(id, userId, isDeleted);
   }
 

@@ -137,6 +137,11 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
       // 2. Perform optimistic local save
       await repository.cacheInvoiceManifest(manifest, auditResult: manualDraft);
 
+      // 3. CLEANUP: If the user changed the invoice number, delete the old record.
+      if (currentId != widget.audit.invoiceNumber) {
+        await repository.hardDeleteInvoice(widget.audit.invoiceNumber, userId);
+      }
+
       if (mounted) {
         // Immediate UI feedback
         Navigator.pop(context);

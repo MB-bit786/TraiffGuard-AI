@@ -247,16 +247,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: TariffColors.amberPending.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: TariffColors.amberPending.withValues(alpha: 0.3), width: 1.5),
           ),
-          child: const Icon(
-            Icons.shield_rounded,
-            color: TariffColors.amberPending,
-            size: 48,
+          child: Image.asset(
+            'assets/images/logo.png',
+            width: 60,
+            height: 60,
+            errorBuilder: (context, error, stackTrace) => const Icon(
+              Icons.shield_rounded,
+              color: TariffColors.amberPending,
+              size: 48,
+            ),
           ),
         ),
         const SizedBox(height: 28),

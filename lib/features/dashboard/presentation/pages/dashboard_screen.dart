@@ -79,16 +79,49 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       backgroundColor: TariffColors.navyMid,
       elevation: 0,
       centerTitle: false,
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'TariffGuard Intelligence',
-            style: TextStyle(color: TariffColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              // color: TariffColors.amberPending.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Image.asset(
+              'assets/images/logo.png',
+              width: 34,
+              height: 34,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                debugPrint('[LOGO] Failed to load assets/images/logo.png: $error');
+                return const Icon(
+
+                  Icons.shield_rounded,
+                  color: TariffColors.amberPending,
+                  size: 20,
+                );
+              },
+            ),
           ),
-          Text(
-            user?.email ?? 'OPERATOR SESSION',
-            style: const TextStyle(color: TariffColors.textMuted, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'TariffGuard',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: TariffColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  user?.email ?? 'OPERATOR',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: TariffColors.textMuted, fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -141,7 +174,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.shield_rounded, color: TariffColors.amberPending, size: 40),
+                  Image.asset(
+                    'assets/images/logo.png',
+                    width: 48,
+                    height: 48,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.shield_rounded,
+                      color: TariffColors.amberPending,
+                      size: 40,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   const Text('TARIFFGUARD AI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2)),
                   Text('${AppConstants.appVersion.toUpperCase()} (STABLE)', style: const TextStyle(color: TariffColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),

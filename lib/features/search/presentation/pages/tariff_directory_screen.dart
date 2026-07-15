@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/features/search/presentation/providers/tariff_search_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class TariffDirectoryScreen extends ConsumerStatefulWidget {
   const TariffDirectoryScreen({super.key});
@@ -84,7 +85,7 @@ class _TariffDirectoryScreenState extends ConsumerState<TariffDirectoryScreen> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -456,7 +457,7 @@ class _TariffDirectoryScreenState extends ConsumerState<TariffDirectoryScreen> {
               width: double.infinity,
               height: 54,
               child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => context.pop(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: TariffColors.navyElevated,
                   foregroundColor: TariffColors.textPrimary,

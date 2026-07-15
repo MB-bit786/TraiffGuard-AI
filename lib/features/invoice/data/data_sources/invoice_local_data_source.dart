@@ -1,5 +1,5 @@
 import 'package:sqflite/sqflite.dart';
-import '../../../../core/util/sql_database_service.dart';
+import '../../../../core/services/sql_database_service.dart';
 import 'package:hscode_auditor/core/constants/db_constants.dart';
 import '../models/invoice_model.dart';
 import '../../../audit/data/models/hs_audit_result_model.dart';

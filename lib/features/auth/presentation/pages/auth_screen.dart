@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:hscode_auditor/core/util/auth_service.dart';
+import 'package:hscode_auditor/core/services/auth_service.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/core/constants/auth_error_constants.dart';
 

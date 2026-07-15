@@ -4,6 +4,8 @@ import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/audit_filter_provider.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hscode_auditor/config/routes/app_routes.dart';
 
 class AuditHistoryScreen extends ConsumerStatefulWidget {
   const AuditHistoryScreen({super.key});
@@ -36,13 +38,13 @@ class _AuditHistoryScreenState extends ConsumerState<AuditHistoryScreen> {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Audit Archive', style: TextStyle(color: TariffColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
+            Text('Audit History', style: TextStyle(color: TariffColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
             Text('HISTORICAL MANIFESTS', style: TextStyle(color: TariffColors.textMuted, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2)),
           ],
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -207,7 +209,7 @@ class _AuditHistoryScreenState extends ConsumerState<AuditHistoryScreen> {
         side: const BorderSide(color: TariffColors.cardBorder)
       ),
       child: InkWell(
-        onTap: () => Navigator.of(context).pushNamed('/audit-result', arguments: invoice.id),
+        onTap: () => context.push(AppRoutes.auditResultPath(invoice.id)),
         borderRadius: BorderRadius.circular(14),
         child: Padding(
           padding: const EdgeInsets.all(16),

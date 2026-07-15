@@ -3,12 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/features/search/presentation/providers/tariff_search_provider.dart';
 import 'package:hscode_auditor/features/audit/presentation/providers/audit_detail_provider.dart';
-import 'package:hscode_auditor/core/util/auto_sync_service.dart';
-import '../../../../core/util/auth_service.dart';
+import 'package:hscode_auditor/core/services/auto_sync_service.dart';
+import '../../../../core/services/auth_service.dart';
 import '../../../audit/data/models/hs_audit_result_model.dart';
 import '../providers/invoice_list_provider.dart';
 import '../../../invoice/presentation/providers/invoice_providers.dart';
 import '../../../invoice/domain/entities/invoice_entity.dart';
+import 'package:go_router/go_router.dart';
 
 class EditAuditScreen extends ConsumerStatefulWidget {
   final HsAuditResultModel audit;
@@ -81,6 +82,25 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
   Future<void> _saveQuicklyAndAnalyzeInBackground() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // 0. CHECK FOR CHANGES: If nothing changed, just exit to save API costs and time.
+    final bool hasChanged =
+        _consigneeController.text.trim() != widget.audit.consignee ||
+        _invoiceNumberController.text.trim() != widget.audit.invoiceNumber ||
+        _cargoDescController.text.trim() != widget.audit.cargoDescription ||
+        _originCountryController.text.trim() != widget.audit.originCountry ||
+        _destCountryController.text.trim() != widget.audit.destinationCountry ||
+        _valueController.text.trim() != widget.audit.declaredValue ||
+        _weightController.text.trim() != widget.audit.totalWeightKg ||
+        _selectedCurrency != widget.audit.currency ||
+        _selectedHsCode != widget.audit.hsCode ||
+        _selectedMonth != widget.audit.plannedMonth ||
+        _selectedShippingMethod != widget.audit.shippingMethod;
+
+    if (!hasChanged) {
+      context.pop();
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     try {
@@ -144,7 +164,7 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
 
       if (mounted) {
         // Immediate UI feedback
-        Navigator.pop(context);
+        context.pop();
 
         // Defer heavy work to post-transition frame
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -190,7 +210,7 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
         backgroundColor: TariffColors.navyMid,
         elevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: TariffColors.textSecondary, size: 20),
         ),
         title: const Column(

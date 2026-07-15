@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
-import 'package:hscode_auditor/core/util/auth_service.dart';
+import 'package:hscode_auditor/core/services/auth_service.dart';
 import 'package:hscode_auditor/core/constants/app_constants.dart';
+import 'package:go_router/go_router.dart';
 
 /// Features high-fidelity legal documentation with interactive acceptance workflows.
 class TermsConditionsScreen extends ConsumerStatefulWidget {
@@ -99,7 +100,7 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
         ),
         leading: !widget.isGatekeeperMode 
           ? IconButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => context.pop(),
               icon: const Icon(Icons.arrow_back_ios_new_rounded, color: TariffColors.textSecondary, size: 20),
             )
           : null,

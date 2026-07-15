@@ -4,6 +4,7 @@ import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import '../../../invoice/domain/entities/invoice_entity.dart';
 import '../providers/trash_list_provider.dart';
 import '../providers/invoice_list_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class TrashScreen extends ConsumerWidget {
   const TrashScreen({super.key});
@@ -42,7 +43,7 @@ class TrashScreen extends ConsumerWidget {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         actions: [
           IconButton(
@@ -201,12 +202,12 @@ class TrashScreen extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => context.pop(),
             child: const Text('CANCEL', style: TextStyle(color: TariffColors.textMuted)),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              context.pop();
               await ref.read(trashListProvider.notifier).permanentlyDeleteInvoice(invoice.id);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).clearSnackBars();

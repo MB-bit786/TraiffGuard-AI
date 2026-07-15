@@ -4,6 +4,8 @@ import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_form_notifier.dart';
 import 'package:hscode_auditor/features/search/presentation/providers/tariff_search_provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hscode_auditor/config/routes/app_routes.dart';
 
 class InvoiceFormScreen extends ConsumerStatefulWidget {
   const InvoiceFormScreen({super.key});
@@ -112,9 +114,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       }
 
       if (state.result != null) {
-        Navigator.of(context).pushNamed('/audit-result', arguments: state.result);
+        context.push(AppRoutes.auditResultPath(state.result!.invoiceNumber));
       } else {
-        Navigator.of(context).pop();
+        context.pop();
       }
     }
   }
@@ -139,7 +141,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
-        onPressed: () => Navigator.of(context).maybePop(),
+        onPressed: () => context.pop(),
         icon: const Icon(
           Icons.arrow_back_ios_new_rounded,
           color: TariffColors.textSecondary,

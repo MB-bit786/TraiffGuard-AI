@@ -5,7 +5,7 @@ import '../data_sources/invoice_local_data_source.dart';
 import '../data_sources/invoice_remote_data_source.dart';
 import '../models/invoice_model.dart';
 import '../../../audit/data/models/hs_audit_result_model.dart';
-import '../../../../core/util/sql_database_service.dart';
+import '../../../../core/services/sql_database_service.dart';
 
 class InvoiceRepositoryImpl implements InvoiceRepository {
   final InvoiceLocalDataSource localDataSource;

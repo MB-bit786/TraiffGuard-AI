@@ -4,39 +4,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import '../../domain/entities/hs_audit_result_entity.dart';
 import '../providers/audit_detail_provider.dart';
-import 'package:hscode_auditor/core/util/pdf_export_service.dart';
+import 'package:hscode_auditor/core/services/pdf_export_service.dart';
 import 'package:hscode_auditor/core/constants/app_constants.dart';
+
+import 'package:go_router/go_router.dart';
+import 'package:hscode_auditor/config/routes/app_routes.dart';
 
 class AuditResultScreen extends ConsumerWidget {
   const AuditResultScreen({
     super.key,
     this.result,
+    this.activeInvoiceId,
   });
 
   final HsAuditResultEntity? result;
+  final String? activeInvoiceId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final arg = ModalRoute.of(context)?.settings.arguments;
-    
     // Determine the active invoice ID to watch the database reactively.
-    String? activeInvoiceId;
-    if (arg is String) {
-      activeInvoiceId = arg;
-    } else if (arg is HsAuditResultEntity) {
-      activeInvoiceId = arg.invoiceNumber;
-    } else if (result != null) {
-      activeInvoiceId = result!.invoiceNumber;
-    }
+    // In a GoRouter architecture, the activeInvoiceId passed from the router is the Source of Truth.
+    final String? currentInvoiceId = activeInvoiceId;
 
-    if (activeInvoiceId != null) {
-      final detailAsync = ref.watch(auditDetailProvider(activeInvoiceId));
+    if (currentInvoiceId != null) {
+      final detailAsync = ref.watch(auditDetailProvider(currentInvoiceId));
       
       return detailAsync.when(
         data: (fetchedResult) {
           if (fetchedResult == null) {
-            // Fallback if not in DB yet (e.g. immediate result from form)
-            if (arg is HsAuditResultEntity) return _buildScaffold(context, ref, arg);
+            // Fallback for immediate results (e.g., from local form cache)
             if (result != null) return _buildScaffold(context, ref, result!);
             return _buildErrorScaffold(context, 'Audit report not found.');
           }
@@ -46,11 +42,14 @@ class AuditResultScreen extends ConsumerWidget {
           backgroundColor: TariffColors.navyDeep,
           body: Center(child: CircularProgressIndicator(color: TariffColors.amberPending)),
         ),
-        error: (err, _) => _buildErrorScaffold(context, 'Error: $err'),
+        error: (err, _) => _buildErrorScaffold(context, 'Critical: $err'),
       );
     }
 
-    return _buildErrorScaffold(context, 'Invalid audit report state.');
+    // Secondary fallback for direct object injection (used in offline/immediate modes)
+    if (result != null) return _buildScaffold(context, ref, result!);
+
+    return _buildErrorScaffold(context, 'Invalid state: No ID provided.');
   }
 
   Widget _buildScaffold(BuildContext context, WidgetRef ref, HsAuditResultEntity finalResult) {
@@ -69,7 +68,7 @@ class AuditResultScreen extends ConsumerWidget {
         backgroundColor: TariffColors.navyMid,
         elevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: TariffColors.textSecondary, size: 20),
         ),
       ),
@@ -88,7 +87,7 @@ class AuditResultScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 32),
               ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => context.pop(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: TariffColors.navyElevated,
                   foregroundColor: TariffColors.textPrimary,
@@ -108,7 +107,7 @@ class AuditResultScreen extends ConsumerWidget {
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
-        onPressed: () => Navigator.of(context).maybePop(),
+        onPressed: () => context.pop(),
         icon: const Icon(
           Icons.arrow_back_ios_new_rounded,
           color: TariffColors.textSecondary,
@@ -140,7 +139,7 @@ class AuditResultScreen extends ConsumerWidget {
       actions: [
         IconButton(
           onPressed: () {
-            Navigator.pushNamed(context, '/edit-audit', arguments: finalResult);
+            context.push(AppRoutes.editAuditPath(finalResult.invoiceNumber));
           },
           icon: const Icon(
             Icons.edit_note_rounded,
@@ -858,9 +857,9 @@ class AuditResultScreen extends ConsumerWidget {
                       'You are about to transmit this cargo manifest to the National Customs Authority. This action will finalize the audit and lock the record.',
                     ),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
+                      TextButton(onPressed: () => context.pop(false), child: const Text('CANCEL')),
                       TextButton(
-                        onPressed: () => Navigator.pop(ctx, true),
+                        onPressed: () => context.pop(true),
                         child: const Text('SUBMIT', style: TextStyle(color: TariffColors.greenVerified, fontWeight: FontWeight.bold)),
                       ),
                     ],
@@ -954,9 +953,11 @@ class _TariffRow extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start, // Align to top for multi-line values
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Flexible(
+                flex: 2,
                 child: Text(
                   label,
                   style: const TextStyle(
@@ -964,11 +965,11 @@ class _TariffRow extends StatelessWidget {
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Flexible(
+                flex: 3,
                 child: Text(
                   value,
                   textAlign: TextAlign.right,
@@ -980,7 +981,6 @@ class _TariffRow extends StatelessWidget {
                         ? 'monospace'
                         : null,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

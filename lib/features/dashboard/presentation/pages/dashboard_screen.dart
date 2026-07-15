@@ -8,8 +8,10 @@ import 'package:hscode_auditor/features/dashboard/presentation/providers/audit_f
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
 import 'package:hscode_auditor/features/search/presentation/pages/tariff_directory_screen.dart';
-import 'package:hscode_auditor/core/util/auth_service.dart';
+import 'package:hscode_auditor/core/services/auth_service.dart';
 import 'package:hscode_auditor/core/constants/app_constants.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hscode_auditor/config/routes/app_routes.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -29,7 +31,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   void _navigateToHistory() {
     ref.read(auditFilterProvider.notifier).state = AuditFilter.all;
-    Navigator.of(context).pushNamed('/audit-history');
+    context.push(AppRoutes.auditHistory);
   }
 
   Future<void> _trashInvoice(InvoiceEntity invoice) async {
@@ -96,7 +98,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               errorBuilder: (context, error, stackTrace) {
                 debugPrint('[LOGO] Failed to load assets/images/logo.png: $error');
                 return const Icon(
-
                   Icons.shield_rounded,
                   color: TariffColors.amberPending,
                   size: 20,
@@ -195,24 +196,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             leading: const Icon(Icons.history_rounded, color: TariffColors.textSecondary),
             title: const Text('Audit History', style: TextStyle(color: TariffColors.textPrimary, fontWeight: FontWeight.w600)),
             onTap: () {
-              Navigator.pop(context);
+              context.pop();
               _navigateToHistory();
             },
           ),
-          ListTile(
+            ListTile(
             leading: const Icon(Icons.menu_book_rounded, color: TariffColors.textSecondary),
             title: const Text('Tariff Directory Lookup', style: TextStyle(color: TariffColors.textPrimary, fontWeight: FontWeight.w600)),
             onTap: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const TariffDirectoryScreen()));
+              context.pop(); // Close drawer
+              context.push(AppRoutes.tariffDirectory);
             },
           ),
           ListTile(
             leading: const Icon(Icons.delete_outline_rounded, color: TariffColors.textSecondary),
             title: const Text('Trash Bin', style: TextStyle(color: TariffColors.textPrimary, fontWeight: FontWeight.w600)),
             onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/trash');
+              context.pop();
+              context.push(AppRoutes.trash);
             },
           ),
           const Spacer(),
@@ -345,14 +346,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         side: const BorderSide(color: TariffColors.cardBorder, width: 1),
       ),
       child: InkWell(
-          onTap: () => Navigator.of(context).pushNamed('/audit-result', arguments: invoice.id),
+          onTap: () => context.push(AppRoutes.auditResultPath(invoice.id)),
           onLongPress: () async {
             final repository = ref.read(inv.invoiceRepositoryProvider);
             final user = ref.read(authStateProvider).value;
             final userId = user?.uid ?? 'anonymous';
             final audit = await repository.getAuditResultByInvoiceId(invoice.id, userId);
             if (!mounted) return;
-            if (audit != null) Navigator.of(context).pushNamed('/edit-audit', arguments: audit);
+            if (audit != null) context.push(AppRoutes.editAuditPath(invoice.id));
           },
           borderRadius: BorderRadius.circular(14),
           child: Padding(
@@ -395,10 +396,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     _buildMiniChip(invoice.hsCode, TariffColors.amberPending),
-                    const SizedBox(width: 8),
                     _buildMiniChip(invoice.dutyRate, TariffColors.textSecondary),
                   ],
                 ),
@@ -419,7 +421,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildFab() {
     return FloatingActionButton.extended(
-      onPressed: () => Navigator.of(context).pushNamed('/invoice-form'),
+      onPressed: () => context.push(AppRoutes.invoiceForm),
       backgroundColor: TariffColors.amberPending,
       foregroundColor: TariffColors.navyDeep,
       elevation: 4,

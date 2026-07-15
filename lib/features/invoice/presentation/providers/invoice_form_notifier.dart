@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
-import 'package:hscode_auditor/core/util/auth_service.dart';
+import 'package:hscode_auditor/core/services/auth_service.dart';
 import 'package:hscode_auditor/features/invoice/domain/usecases/invoice_use_cases.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart';
 

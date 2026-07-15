@@ -4,12 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:hscode_auditor/features/invoice/domain/repository/invoice_repository.dart';
-import 'package:hscode_auditor/core/util/gemini_audit_service.dart';
+import 'package:hscode_auditor/core/services/gemini_audit_service.dart';
 import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
-import 'package:hscode_auditor/core/util/auth_service.dart';
+import 'package:hscode_auditor/core/services/auth_service.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
 
 class AutoSyncService {

@@ -4,7 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hscode_auditor/core/util/sql_database_service.dart';
+import 'package:hscode_auditor/core/services/sql_database_service.dart';
 import 'package:hscode_auditor/core/constants/db_constants.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
 import '../../features/auth/domain/repository/auth_repository.dart';

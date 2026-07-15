@@ -2,8 +2,8 @@ import 'dart:convert';
 import '../entities/invoice_entity.dart';
 import '../../../audit/domain/entities/hs_audit_result_entity.dart';
 import '../repository/invoice_repository.dart';
-import 'package:hscode_auditor/core/util/gemini_audit_service.dart';
-import 'package:hscode_auditor/core/util/auth_service.dart';
+import 'package:hscode_auditor/core/services/gemini_audit_service.dart';
+import 'package:hscode_auditor/core/services/auth_service.dart';
 
 class AuditParams {
   final String invoiceNumber;

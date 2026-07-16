@@ -30,7 +30,6 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Terms must be accepted to use platform.'),
-          backgroundColor: TariffColors.crimsonRisk,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -58,7 +57,6 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error updating profile: $e'),
-            backgroundColor: TariffColors.crimsonRisk,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -70,10 +68,13 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: TariffColors.navyDeep,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: TariffColors.navyMid,
+        backgroundColor: isDark ? TariffColors.navyMid : const Color(0xFF1565C0),
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: !widget.isGatekeeperMode,
@@ -82,15 +83,15 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
             const Text(
               'Terms & Conditions',
               style: TextStyle(
-                color: TariffColors.textPrimary,
+                color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
             ),
             Text(
               'LEGAL PROTOCOL ${AppConstants.legalProtocolVersion.toUpperCase()}',
-              style: const TextStyle(
-                color: TariffColors.textMuted,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.5,
@@ -101,7 +102,7 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
         leading: !widget.isGatekeeperMode 
           ? IconButton(
               onPressed: () => context.pop(),
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: TariffColors.textSecondary, size: 20),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
             )
           : null,
       ),
@@ -153,6 +154,8 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
   }
 
   Widget _buildLegalHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -174,20 +177,20 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        const Text(
+        Text(
           'Operator Service Agreement',
           style: TextStyle(
-            color: TariffColors.textPrimary,
+            color: isDark ? TariffColors.textPrimary : Colors.black87,
             fontSize: 24,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Please review the following regulatory protocols governing the use of the TariffGuard AI intelligence platform.',
           style: TextStyle(
-            color: TariffColors.textSecondary,
+            color: isDark ? TariffColors.textSecondary : Colors.black54,
             fontSize: 14,
             height: 1.5,
           ),
@@ -197,6 +200,8 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
   }
 
   Widget _buildLegalSection({required String title, required String content}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 28.0),
       child: Column(
@@ -214,8 +219,8 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
           const SizedBox(height: 12),
           Text(
             content,
-            style: const TextStyle(
-              color: TariffColors.textSecondary,
+            style: TextStyle(
+              color: isDark ? TariffColors.textSecondary : Colors.black87,
               fontSize: 13,
               height: 1.7,
               fontWeight: FontWeight.w400,
@@ -227,19 +232,21 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
   }
 
   Widget _buildFooterSignature() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Center(
       child: Column(
         children: [
-          const Icon(
+          Icon(
             Icons.shield_outlined,
-            color: TariffColors.textMuted,
+            color: isDark ? TariffColors.textMuted : Colors.grey[400],
             size: 32,
           ),
           const SizedBox(height: 16),
           Text(
             'END OF OFFICIAL PROTOCOL',
             style: TextStyle(
-              color: TariffColors.textMuted.withValues(alpha: 0.6),
+              color: (isDark ? TariffColors.textMuted : Colors.grey[400]!).withValues(alpha: 0.6),
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 2.0,
@@ -251,12 +258,14 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
   }
 
   Widget _buildActionBlock() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.fromLTRB(24, 20, 24, 20 + MediaQuery.of(context).padding.bottom),
-      decoration: const BoxDecoration(
-        color: TariffColors.navyMid,
+      decoration: BoxDecoration(
+        color: isDark ? TariffColors.navyMid : Colors.white,
         border: Border(
-          top: BorderSide(color: TariffColors.divider, width: 1.5),
+          top: BorderSide(color: isDark ? TariffColors.divider : Colors.grey[200]!, width: 1.5),
         ),
       ),
       child: Row(
@@ -265,8 +274,8 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
             child: OutlinedButton(
               onPressed: _isProcessing ? null : _handleDecline,
               style: OutlinedButton.styleFrom(
-                foregroundColor: TariffColors.textSecondary,
-                side: BorderSide(color: TariffColors.textMuted.withValues(alpha: 0.4), width: 1.5),
+                foregroundColor: isDark ? TariffColors.textSecondary : Colors.black54,
+                side: BorderSide(color: isDark ? TariffColors.textMuted.withValues(alpha: 0.4) : Colors.grey[300]!, width: 1.5),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -283,18 +292,18 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
               onPressed: _isProcessing ? null : _handleAccept,
               style: ElevatedButton.styleFrom(
                 backgroundColor: TariffColors.amberPending,
-                foregroundColor: TariffColors.navyDeep,
+                foregroundColor: isDark ? TariffColors.navyDeep : Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: _isProcessing
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
-                        valueColor: AlwaysStoppedAnimation<Color>(TariffColors.navyDeep),
+                        valueColor: AlwaysStoppedAnimation<Color>(isDark ? TariffColors.navyDeep : Colors.white),
                       ),
                     )
                   : const Text(

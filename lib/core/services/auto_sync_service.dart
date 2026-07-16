@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:hscode_auditor/features/invoice/domain/repository/invoice_repository.dart';
 import 'package:hscode_auditor/core/services/gemini_audit_service.dart';
 import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
@@ -36,17 +35,10 @@ class AutoSyncService {
       }
     }, fireImmediately: true);
 
-    final connectivity = await Connectivity().checkConnectivity();
-    if (connectivity.isNotEmpty && !connectivity.contains(ConnectivityResult.none)) {
+    // Initial sync check
+    if (_ref.read(connectionProvider).effectivelyOnline) {
       syncPendingAudits();
     }
-
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
-      final bool isOnline = results.isNotEmpty && !results.contains(ConnectivityResult.none);
-      if (isOnline) {
-        syncPendingAudits();
-      }
-    });
 
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       final isOnline = _ref.read(connectionProvider).effectivelyOnline;

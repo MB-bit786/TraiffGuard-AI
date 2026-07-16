@@ -4,38 +4,50 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
-class ConnectionState {
+class AppConnectionState {
   final bool isOnline;
   final bool hasHandshake;
+  final bool isManualOverride;
+  final bool manualOnlineStatus;
   
-  /// Effectively online means we have a network interface AND can reach the internet.
-  bool get effectivelyOnline => isOnline && hasHandshake;
+  /// Effectively online means we have a network interface AND can reach the internet,
+  /// UNLESS a manual override is active.
+  bool get effectivelyOnline => isManualOverride ? manualOnlineStatus : (isOnline && hasHandshake);
 
-  ConnectionState({
+  AppConnectionState({
     required this.isOnline, 
-    this.hasHandshake = false
+    this.hasHandshake = false,
+    this.isManualOverride = false,
+    this.manualOnlineStatus = true,
   });
 
-  ConnectionState copyWith({bool? isOnline, bool? hasHandshake}) {
-    return ConnectionState(
+  AppConnectionState copyWith({
+    bool? isOnline, 
+    bool? hasHandshake,
+    bool? isManualOverride,
+    bool? manualOnlineStatus,
+  }) {
+    return AppConnectionState(
       isOnline: isOnline ?? this.isOnline,
       hasHandshake: hasHandshake ?? this.hasHandshake,
+      isManualOverride: isManualOverride ?? this.isManualOverride,
+      manualOnlineStatus: manualOnlineStatus ?? this.manualOnlineStatus,
     );
   }
 }
 
-class ConnectionNotifier extends StateNotifier<ConnectionState> {
+class ConnectionNotifier extends StateNotifier<AppConnectionState> {
   StreamSubscription? _subscription;
   Timer? _handshakeTimer;
 
-  ConnectionNotifier() : super(ConnectionState(isOnline: true)) {
+  ConnectionNotifier() : super(AppConnectionState(isOnline: true)) {
     _init();
   }
 
   Future<void> _init() async {
     final results = await Connectivity().checkConnectivity();
     final bool isOnline = _checkOnline(results);
-    state = ConnectionState(isOnline: isOnline);
+    state = AppConnectionState(isOnline: isOnline);
     
     if (isOnline) _performHandshake();
 
@@ -74,6 +86,14 @@ class ConnectionNotifier extends StateNotifier<ConnectionState> {
     return results.isNotEmpty && !results.contains(ConnectivityResult.none);
   }
 
+  void toggleManualOverride(bool value) {
+    state = state.copyWith(isManualOverride: value);
+  }
+
+  void setManualStatus(bool value) {
+    state = state.copyWith(manualOnlineStatus: value);
+  }
+
   @override
   void dispose() {
     _subscription?.cancel();
@@ -82,6 +102,6 @@ class ConnectionNotifier extends StateNotifier<ConnectionState> {
   }
 }
 
-final connectionProvider = StateNotifierProvider<ConnectionNotifier, ConnectionState>((ref) {
+final connectionProvider = StateNotifierProvider<ConnectionNotifier, AppConnectionState>((ref) {
   return ConnectionNotifier();
 });

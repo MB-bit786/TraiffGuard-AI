@@ -289,7 +289,7 @@ class PdfExportService {
       debugPrint('[PDF] Export Error: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to generate PDF: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Failed to generate PDF: $e')),
         );
       }
     }

@@ -1,7 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
 import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
@@ -51,21 +49,7 @@ class InvoiceFormNotifier extends StateNotifier<InvoiceFormState> {
     required String shippingMethod,
     String? hsCode,
   }) async {
-    final bool isUserOnline = _ref.read(connectionProvider).isOnline;
-    bool hasHandshake = false;
-
-    if (isUserOnline && !kIsWeb) {
-      try {
-        final lookup = await InternetAddress.lookup('google.com').timeout(const Duration(seconds: 3));
-        hasHandshake = lookup.isNotEmpty && lookup[0].rawAddress.isNotEmpty;
-      } catch (_) {
-        hasHandshake = false;
-      }
-    } else if (kIsWeb) {
-      hasHandshake = isUserOnline;
-    }
-
-    final bool effectivelyOnline = isUserOnline && hasHandshake;
+    final bool effectivelyOnline = _ref.read(connectionProvider).effectivelyOnline;
     final String userId = _ref.read(authUseCasesProvider).currentUser?.uid ?? 'anonymous';
 
     state = state.copyWith(isAnalyzing: true, error: null, result: null);

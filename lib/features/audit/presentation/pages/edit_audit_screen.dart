@@ -5,11 +5,12 @@ import 'package:hscode_auditor/features/search/presentation/providers/tariff_sea
 import 'package:hscode_auditor/features/audit/presentation/providers/audit_detail_provider.dart';
 import 'package:hscode_auditor/core/services/auto_sync_service.dart';
 import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
-import '../../../audit/data/models/hs_audit_result_model.dart';
-import '../providers/invoice_list_provider.dart';
+import '../../data/models/hs_audit_result_model.dart';
+import '../../../dashboard/presentation/providers/invoice_list_provider.dart';
 import '../../../invoice/presentation/providers/invoice_providers.dart';
 import '../../../invoice/domain/entities/invoice_entity.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hscode_auditor/core/constants/app_constants.dart';
 
 class EditAuditScreen extends ConsumerStatefulWidget {
   final HsAuditResultModel audit;
@@ -34,13 +35,6 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
   late String _selectedMonth;
   late String _selectedShippingMethod;
   bool _isSaving = false;
-
-  static const List<String> _currencies = ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CNY', 'RUB'];
-  static const List<String> _months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  static const List<String> _shippingMethods = ['Air Freight', 'Sea Freight'];
 
   @override
   void initState() {
@@ -180,7 +174,6 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Changes saved locally. AI analysis started in background.'), 
-              backgroundColor: TariffColors.navyElevated,
               behavior: SnackBarBehavior.floating,
               duration: Duration(seconds: 2),
             ),
@@ -204,37 +197,40 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: TariffColors.navyDeep,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: TariffColors.navyMid,
+        backgroundColor: isDark ? TariffColors.navyMid : const Color(0xFF1565C0),
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: TariffColors.textSecondary, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
         ),
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Edit Audit Details', style: TextStyle(color: TariffColors.textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
-            Text('OPTIMISTIC CORRECTION', style: TextStyle(color: TariffColors.textMuted, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.8)),
+            const Text('Edit Audit Details', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+            Text('OPTIMISTIC CORRECTION', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.8)),
           ],
         ),
         actions: [
           if (!_isSaving)
             TextButton(
               onPressed: _saveQuicklyAndAnalyzeInBackground,
-              child: const Text('SAVE & ANALYZE', style: TextStyle(color: TariffColors.amberPending, fontWeight: FontWeight.bold)),
+              child: const Text('SAVE & ANALYZE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             )
           else
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: TariffColors.amberPending))),
+              child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))),
             ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: TariffColors.divider),
+          child: Container(height: 1, color: Colors.white.withValues(alpha: 0.1)),
         ),
       ),
       body: Form(
@@ -275,19 +271,21 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
   }
 
   Widget _buildSectionLabel(String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Row(
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: TariffColors.textMuted,
+          style: TextStyle(
+            color: isDark ? TariffColors.textMuted : Colors.grey[600],
             fontSize: 10,
             fontWeight: FontWeight.w800,
             letterSpacing: 2.0,
           ),
         ),
         const SizedBox(width: 10),
-        Expanded(child: Container(height: 1, color: TariffColors.divider)),
+        Expanded(child: Container(height: 1, color: isDark ? TariffColors.divider : Colors.grey[300])),
       ],
     );
   }
@@ -299,20 +297,22 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
     required IconData icon,
     TextInputType inputType = TextInputType.text,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return TextFormField(
       controller: controller,
       keyboardType: inputType,
-      style: const TextStyle(color: TariffColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+      style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 14, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, size: 18, color: TariffColors.textMuted),
-        labelStyle: const TextStyle(color: TariffColors.textSecondary, fontSize: 13),
-        hintStyle: const TextStyle(color: TariffColors.textMuted, fontSize: 13),
+        prefixIcon: Icon(icon, size: 18, color: isDark ? TariffColors.textMuted : Colors.grey[400]),
+        labelStyle: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.grey[700], fontSize: 13),
+        hintStyle: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[400], fontSize: 13),
         filled: true,
-        fillColor: TariffColors.navySurface,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: TariffColors.inputBorder, width: 1)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: TariffColors.inputBorder, width: 1)),
+        fillColor: isDark ? TariffColors.navySurface : Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: TariffColors.amberPending, width: 2)),
       ),
       validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
@@ -320,22 +320,24 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
   }
 
   Widget _buildCargoDescriptionField() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return TextFormField(
       controller: _cargoDescController,
       maxLines: 4,
-      style: const TextStyle(color: TariffColors.textPrimary, fontSize: 14, height: 1.6),
+      style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 14, height: 1.6),
       decoration: InputDecoration(
         labelText: 'Cargo Description',
         alignLabelWithHint: true,
-        prefixIcon: const Padding(
-          padding: EdgeInsets.only(bottom: 60),
-          child: Icon(Icons.description_rounded, size: 18, color: TariffColors.textMuted),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(bottom: 60),
+          child: Icon(Icons.description_rounded, size: 18, color: isDark ? TariffColors.textMuted : Colors.grey[400]),
         ),
-        labelStyle: const TextStyle(color: TariffColors.textSecondary, fontSize: 13),
+        labelStyle: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.grey[700], fontSize: 13),
         filled: true,
-        fillColor: TariffColors.navySurface,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: TariffColors.inputBorder, width: 1)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: TariffColors.inputBorder, width: 1)),
+        fillColor: isDark ? TariffColors.navySurface : Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: TariffColors.amberPending, width: 2)),
       ),
       validator: (v) => (v == null || v.trim().length < 10) ? 'Min. 10 characters' : null,
@@ -362,7 +364,7 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
           child: _buildDropdown(
             label: 'Currency',
             initialValue: _selectedCurrency,
-            items: _currencies,
+            items: AppConstants.currencies,
             onChanged: (v) => setState(() => _selectedCurrency = v!),
           ),
         ),
@@ -387,7 +389,7 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
               child: _buildDropdown(
                 label: 'Planned Month',
                 initialValue: _selectedMonth,
-                items: _months,
+                items: AppConstants.months,
                 onChanged: (v) => setState(() => _selectedMonth = v!),
               ),
             ),
@@ -396,7 +398,7 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
               child: _buildDropdown(
                 label: 'Shipping Method',
                 initialValue: _selectedShippingMethod,
-                items: _shippingMethods,
+                items: AppConstants.shippingMethods,
                 onChanged: (v) => setState(() => _selectedShippingMethod = v!),
               ),
             ),
@@ -407,17 +409,19 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
   }
 
   Widget _buildDropdown({required String label, required String initialValue, required List<String> items, required void Function(String?) onChanged}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return DropdownButtonFormField<String>(
       initialValue: initialValue,
-      dropdownColor: TariffColors.navyMid,
-      style: const TextStyle(color: TariffColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+      dropdownColor: isDark ? TariffColors.navyMid : Colors.white,
+      style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 14, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: TariffColors.textSecondary, fontSize: 13),
+        labelStyle: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.grey[700], fontSize: 13),
         filled: true,
-        fillColor: TariffColors.navySurface,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: TariffColors.inputBorder, width: 1)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: TariffColors.inputBorder, width: 1)),
+        fillColor: isDark ? TariffColors.navySurface : Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1)),
       ),
       items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
       onChanged: onChanged,
@@ -427,6 +431,8 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
   Widget _buildTariffSearchResults() {
     if (_cargoDescController.text.trim().isEmpty) return const SizedBox.shrink();
     final searchResultAsync = ref.watch(tariffSearchProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return searchResultAsync.maybeWhen(
       data: (results) {
         if (results.isEmpty) return const SizedBox.shrink();
@@ -434,21 +440,21 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
           margin: const EdgeInsets.only(top: 8),
           constraints: const BoxConstraints(maxHeight: 200),
           decoration: BoxDecoration(
-            color: TariffColors.navySurface,
+            color: isDark ? TariffColors.navySurface : Colors.white,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: TariffColors.inputBorder),
+            border: Border.all(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!),
           ),
           child: ListView.separated(
             shrinkWrap: true,
             padding: const EdgeInsets.symmetric(vertical: 4),
             itemCount: results.length,
-            separatorBuilder: (_, _) => const Divider(color: TariffColors.divider, height: 1),
+            separatorBuilder: (_, _) => Divider(color: isDark ? TariffColors.divider : Colors.grey[200], height: 1),
             itemBuilder: (context, index) {
               final item = results[index];
               return ListTile(
                 dense: true,
                 title: Text(item['hs_code'] ?? '', style: const TextStyle(color: TariffColors.amberPending, fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text(item['description'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: TariffColors.textSecondary, fontSize: 12)),
+                subtitle: Text(item['description'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 12)),
                 onTap: () {
                   setState(() {
                     _selectedHsCode = item['hs_code'];
@@ -467,22 +473,24 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
   }
 
   Widget _buildInfoNote() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: TariffColors.navySurface,
+        color: isDark ? TariffColors.navySurface : Colors.blue[50],
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: TariffColors.amberPending.withValues(alpha: 0.2)),
+        border: Border.all(color: TariffColors.amberPending.withValues(alpha: isDark ? 0.2 : 0.4)),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.bolt_rounded, color: TariffColors.amberPending, size: 18),
-          SizedBox(width: 10),
+          const Icon(Icons.bolt_rounded, color: TariffColors.amberPending, size: 18),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               'Changes save instantly. High-fidelity AI analysis (duty rates, descriptions) will complete in the background.',
-              style: TextStyle(color: TariffColors.textSecondary, fontSize: 12, height: 1.4),
+              style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.blueGrey[800], fontSize: 12, height: 1.4),
             ),
           ),
         ],

@@ -69,8 +69,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
-          backgroundColor: TariffColors.navyElevated,
+          content: Text(message, style: const TextStyle(fontWeight: FontWeight.w600)),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           margin: const EdgeInsets.all(20),
@@ -107,7 +106,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Verification protocol initiated. Please sign in to activate.'),
-                backgroundColor: TariffColors.greenVerified,
                 behavior: SnackBarBehavior.floating,
               ),
             );

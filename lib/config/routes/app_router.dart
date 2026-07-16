@@ -11,10 +11,11 @@ import 'package:hscode_auditor/features/invoice/presentation/pages/invoice_form_
 import 'package:hscode_auditor/features/audit/presentation/pages/audit_result_screen.dart';
 import 'package:hscode_auditor/features/audit/presentation/pages/audit_history_screen.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/pages/trash_screen.dart';
-import 'package:hscode_auditor/features/dashboard/presentation/pages/edit_audit_screen.dart';
+import 'package:hscode_auditor/features/audit/presentation/pages/edit_audit_screen.dart';
 import 'package:hscode_auditor/features/profile/presentation/pages/terms_conditions_screen.dart';
 import 'package:hscode_auditor/features/auth/presentation/pages/custom_splash_screen.dart';
 import 'package:hscode_auditor/features/search/presentation/pages/tariff_directory_screen.dart';
+import 'package:hscode_auditor/features/dashboard/presentation/pages/settings_screen.dart';
 
 // Providers and Models
 import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
@@ -156,6 +157,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.tariffDirectory,
         builder: (context, state) => const TariffDirectoryScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        builder: (context, state) => const SettingsScreen(),
       ),
     ],
   );

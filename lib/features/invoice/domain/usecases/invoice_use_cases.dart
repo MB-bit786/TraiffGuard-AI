@@ -65,6 +65,10 @@ class InvoiceUseCases {
     }
   }
 
+  Future<void> deleteInvoice(String userId, String invoiceId) async {
+    await repository.softDeleteInvoice(invoiceId, userId, true);
+  }
+
   Future<AuditResponse> processAudit(AuditParams params) async {
     final String timestamp = DateTime.now().toString().split('.').first;
 

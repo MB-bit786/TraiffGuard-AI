@@ -51,21 +51,7 @@ class InvoiceFormNotifier extends StateNotifier<InvoiceFormState> {
     required String shippingMethod,
     String? hsCode,
   }) async {
-    final bool isUserOnline = _ref.read(connectionProvider).isOnline;
-    bool hasHandshake = false;
-
-    if (isUserOnline && !kIsWeb) {
-      try {
-        final lookup = await InternetAddress.lookup('google.com').timeout(const Duration(seconds: 3));
-        hasHandshake = lookup.isNotEmpty && lookup[0].rawAddress.isNotEmpty;
-      } catch (_) {
-        hasHandshake = false;
-      }
-    } else if (kIsWeb) {
-      hasHandshake = isUserOnline;
-    }
-
-    final bool effectivelyOnline = isUserOnline && hasHandshake;
+    final bool effectivelyOnline = _ref.read(connectionProvider).effectivelyOnline;
     final String userId = _ref.read(authUseCasesProvider).currentUser?.uid ?? 'anonymous';
 
     state = state.copyWith(isAnalyzing: true, error: null, result: null);

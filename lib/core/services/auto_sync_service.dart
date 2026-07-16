@@ -36,17 +36,10 @@ class AutoSyncService {
       }
     }, fireImmediately: true);
 
-    final connectivity = await Connectivity().checkConnectivity();
-    if (connectivity.isNotEmpty && !connectivity.contains(ConnectivityResult.none)) {
+    // Initial sync check
+    if (_ref.read(connectionProvider).effectivelyOnline) {
       syncPendingAudits();
     }
-
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
-      final bool isOnline = results.isNotEmpty && !results.contains(ConnectivityResult.none);
-      if (isOnline) {
-        syncPendingAudits();
-      }
-    });
 
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       final isOnline = _ref.read(connectionProvider).effectivelyOnline;

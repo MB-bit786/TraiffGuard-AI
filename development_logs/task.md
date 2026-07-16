@@ -1,0 +1,4 @@
+- [x] Update `DashboardScreen`: Fix "Total Audits" card visibility in light mode
+- [x] Update `AuditResultScreen`: Make bottom bar and buttons theme-aware
+- [x] Update `TariffDirectoryScreen`: Perform full theme overhaul
+- [x] Verify all changes in Light and Dark modes

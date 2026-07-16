@@ -62,22 +62,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isOnline = ref.watch(connectionProvider).isOnline;
+    final connection = ref.watch(connectionProvider);
+    final isOnline = connection.effectivelyOnline;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: TariffColors.navyDeep,
+      backgroundColor: theme.scaffoldBackgroundColor,
       drawer: _buildSideDrawer(),
-      appBar: _buildAppBar(isOnline),
+      appBar: _buildAppBar(isOnline, connection.isManualOverride),
       body: _buildScrollableBody(),
       floatingActionButton: _buildFab(),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(bool isOnline) {
+  PreferredSizeWidget _buildAppBar(bool isOnline, bool isManual) {
     final user = ref.watch(authStateProvider).value;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return AppBar(
-      backgroundColor: TariffColors.navyMid,
+      backgroundColor: theme.appBarTheme.backgroundColor,
       elevation: 0,
       centerTitle: false,
       title: Row(
@@ -86,7 +90,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              // color: TariffColors.amberPending.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Image.asset(
@@ -95,10 +98,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               height: 34,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
-                debugPrint('[LOGO] Failed to load assets/images/logo.png: $error');
-                return const Icon(
+                return Icon(
                   Icons.shield_rounded,
-                  color: TariffColors.amberPending,
+                  color: isDark ? TariffColors.amberPending : Colors.white,
                   size: 20,
                 );
               },
@@ -110,15 +112,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'TariffGuard',
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: TariffColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: isDark ? TariffColors.textPrimary : Colors.white, 
+                    fontSize: 15, 
+                    fontWeight: FontWeight.w700
+                  ),
                 ),
                 Text(
                   user?.email ?? 'OPERATOR',
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: TariffColors.textMuted, fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                  style: TextStyle(
+                    color: isDark ? TariffColors.textMuted : Colors.white70, 
+                    fontSize: 8, 
+                    fontWeight: FontWeight.w700, 
+                    letterSpacing: 0.5
+                  ),
                 ),
               ],
             ),
@@ -126,17 +137,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ],
       ),
       actions: [
-        _buildConnectionBadge(isOnline),
+        _buildConnectionBadge(isOnline, isManual),
         const SizedBox(width: 8),
       ],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
-        child: Container(color: TariffColors.divider, height: 1),
+        child: Container(color: isDark ? TariffColors.divider : Colors.white24, height: 1),
       ),
     );
   }
 
-  Widget _buildConnectionBadge(bool isOnline) {
+  Widget _buildConnectionBadge(bool isOnline, bool isManual) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 12),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -155,7 +166,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           const SizedBox(width: 6),
           Text(
-            isOnline ? 'ONLINE' : 'OFFLINE',
+            isManual ? (isOnline ? 'FORCED ON' : 'FORCED OFF') : (isOnline ? 'ONLINE' : 'OFFLINE'),
             style: TextStyle(color: isOnline ? TariffColors.greenVerified : TariffColors.amberPending, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5),
           ),
         ],
@@ -164,12 +175,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildSideDrawer() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Drawer(
-      backgroundColor: TariffColors.navyMid,
+      backgroundColor: isDark ? TariffColors.navyMid : Colors.white,
       child: Column(
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(color: TariffColors.navyDeep),
+            decoration: BoxDecoration(color: isDark ? TariffColors.navyDeep : Colors.blue[900]),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -186,42 +199,73 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                   const SizedBox(height: 12),
                   const Text('TARIFFGUARD AI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2)),
-                  Text('${AppConstants.appVersion.toUpperCase()} (STABLE)', style: const TextStyle(color: TariffColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+                  Text('${AppConstants.appVersion.toUpperCase()} (STABLE)', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.history_rounded, color: TariffColors.textSecondary),
-            title: const Text('Audit History', style: TextStyle(color: TariffColors.textPrimary, fontWeight: FontWeight.w600)),
+          _buildDrawerItem(
+            icon: Icons.history_rounded,
+            title: 'Audit History',
             onTap: () {
               context.pop();
               _navigateToHistory();
             },
           ),
-            ListTile(
-            leading: const Icon(Icons.menu_book_rounded, color: TariffColors.textSecondary),
-            title: const Text('Tariff Directory Lookup', style: TextStyle(color: TariffColors.textPrimary, fontWeight: FontWeight.w600)),
+          _buildDrawerItem(
+            icon: Icons.menu_book_rounded,
+            title: 'Tariff Directory Lookup',
             onTap: () {
-              context.pop(); // Close drawer
+              context.pop();
               context.push(AppRoutes.tariffDirectory);
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.delete_outline_rounded, color: TariffColors.textSecondary),
-            title: const Text('Trash Bin', style: TextStyle(color: TariffColors.textPrimary, fontWeight: FontWeight.w600)),
+          _buildDrawerItem(
+            icon: Icons.delete_outline_rounded,
+            title: 'Trash Bin',
             onTap: () {
               context.pop();
               context.push(AppRoutes.trash);
             },
           ),
+          _buildDrawerItem(
+            icon: Icons.settings_outlined,
+            title: 'Settings',
+            onTap: () {
+              context.pop();
+              context.push(AppRoutes.settings);
+            },
+          ),
           const Spacer(),
           Padding(
             padding: const EdgeInsets.all(20.0),
-            child: Text('${AppConstants.appName} ${AppConstants.appVersion}', style: const TextStyle(color: TariffColors.textMuted, fontSize: 11)),
+            child: Text(
+              '${AppConstants.appName} ${AppConstants.appVersion}', 
+              style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 11),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return ListTile(
+      leading: Icon(icon, color: isDark ? TariffColors.textSecondary : Colors.blueGrey),
+      title: Text(
+        title, 
+        style: TextStyle(
+          color: isDark ? TariffColors.textPrimary : Colors.black87, 
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      onTap: onTap,
     );
   }
 
@@ -237,6 +281,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildSectionHeader() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
       child: Column(
@@ -245,17 +292,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Operational Overview', style: TextStyle(color: TariffColors.textPrimary, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+              Text(
+                'Operational Overview', 
+                style: TextStyle(
+                  color: isDark ? TariffColors.textPrimary : Colors.black87, 
+                  fontSize: 22, 
+                  fontWeight: FontWeight.w800, 
+                  letterSpacing: -0.5
+                )
+              ),
               IconButton(
                 onPressed: () => ref.read(invoiceListProvider.notifier).syncWithCloud(),
-                icon: const Icon(Icons.refresh_rounded, color: TariffColors.textMuted, size: 22),
+                icon: Icon(
+                  Icons.refresh_rounded, 
+                  color: isDark ? TariffColors.textMuted : Colors.grey[400], 
+                  size: 22
+                ),
               ),
             ],
           ),
           const SizedBox(height: 20),
           _buildStatsGrid(),
           const SizedBox(height: 32),
-          const Text('RECENT CARGO MANIFESTS', style: TextStyle(color: TariffColors.textMuted, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 2.0)),
+          Text(
+            'RECENT CARGO MANIFESTS', 
+            style: TextStyle(
+              color: isDark ? TariffColors.textMuted : Colors.grey[600], 
+              fontSize: 10, 
+              fontWeight: FontWeight.w800, 
+              letterSpacing: 2.0
+            )
+          ),
         ],
       ),
     );
@@ -263,9 +330,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildStatsGrid() {
     final stats = ref.watch(dashboardStatsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Row(
       children: [
-        Expanded(child: _buildStatCard('TOTAL AUDITS', stats.total.toString(), Icons.analytics_outlined, TariffColors.textPrimary)),
+        Expanded(child: _buildStatCard('TOTAL AUDITS', stats.total.toString(), Icons.analytics_outlined, isDark ? TariffColors.textPrimary : const Color(0xFF1565C0))),
         const SizedBox(width: 12),
         Expanded(child: _buildStatCard('SYNCED', stats.synced.toString(), Icons.cloud_done_outlined, TariffColors.greenVerified)),
         const SizedBox(width: 12),
@@ -275,17 +344,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: TariffColors.navySurface, borderRadius: BorderRadius.circular(16), border: Border.all(color: TariffColors.cardBorder, width: 1)),
+      decoration: BoxDecoration(
+        color: isDark ? TariffColors.navySurface : Colors.white, 
+        borderRadius: BorderRadius.circular(16), 
+        border: Border.all(
+          color: isDark ? TariffColors.cardBorder : Colors.grey[300]!, 
+          width: 1
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: color.withValues(alpha: 0.8), size: 20),
           const SizedBox(height: 12),
-          Text(value, style: TextStyle(color: color, fontSize: 24, fontWeight: FontWeight.w900)),
+          Text(value, style: TextStyle(color: isDark ? color : color.withValues(alpha: 0.9), fontSize: 24, fontWeight: FontWeight.w900)),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: TariffColors.textMuted, fontSize: 9, fontWeight: FontWeight.w800)),
+          Text(label, style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[500], fontSize: 9, fontWeight: FontWeight.w800)),
         ],
       ),
     );
@@ -336,13 +415,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildInvoiceCard(InvoiceEntity invoice) {
     final isSynced = invoice.status == 'synced';
     final accentColor = isSynced ? TariffColors.greenVerified : TariffColors.amberPending;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Card(
       margin: EdgeInsets.zero,
-      color: TariffColors.navySurface,
+      color: isDark ? TariffColors.navySurface : Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: TariffColors.cardBorder, width: 1),
+        side: BorderSide(color: isDark ? TariffColors.cardBorder : Colors.grey[200]!, width: 1),
       ),
       child: InkWell(
           onTap: () => context.push(AppRoutes.auditResultPath(invoice.id)),
@@ -366,20 +448,47 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: isSynced ? TariffColors.greenVerifiedSoft : TariffColors.amberPendingSoft,
+                        color: isSynced 
+                            ? (isDark ? TariffColors.greenVerifiedSoft : Colors.green[50]) 
+                            : (isDark ? TariffColors.amberPendingSoft : Colors.amber[50]),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: isSynced ? TariffColors.greenVerifiedBorder.withValues(alpha: 0.5) : TariffColors.amberPendingBorder.withValues(alpha: 0.5), width: 1),
+                        border: Border.all(
+                          color: isSynced 
+                              ? TariffColors.greenVerifiedBorder.withValues(alpha: 0.5) 
+                              : TariffColors.amberPendingBorder.withValues(alpha: 0.5), 
+                          width: 1
+                        ),
                       ),
-                      child: Icon(isSynced ? Icons.cloud_done_rounded : Icons.cloud_off_rounded, color: accentColor, size: 20),
+                      child: Icon(
+                        isSynced ? Icons.cloud_done_rounded : Icons.cloud_off_rounded, 
+                        color: accentColor, 
+                        size: 20
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(invoice.consignee, style: const TextStyle(color: TariffColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
+                          Text(
+                            invoice.consignee, 
+                            style: TextStyle(
+                              color: isDark ? TariffColors.textPrimary : Colors.black87, 
+                              fontSize: 15, 
+                              fontWeight: FontWeight.w700, 
+                              letterSpacing: 0.2
+                            )
+                          ),
                           const SizedBox(height: 3),
-                          Text(invoice.cargoDescription, style: const TextStyle(color: TariffColors.textSecondary, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(
+                            invoice.cargoDescription, 
+                            style: TextStyle(
+                              color: isDark ? TariffColors.textSecondary : Colors.black54, 
+                              fontSize: 13
+                            ), 
+                            maxLines: 1, 
+                            overflow: TextOverflow.ellipsis
+                          ),
                         ],
                       ),
                     ),
@@ -387,9 +496,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(invoice.id.split('-').last, style: const TextStyle(color: TariffColors.textMuted, fontSize: 10, fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+                        Text(
+                          invoice.id.split('-').last, 
+                          style: TextStyle(
+                            color: isDark ? TariffColors.textMuted : Colors.grey[400], 
+                            fontSize: 10, 
+                            fontFamily: 'monospace', 
+                            fontWeight: FontWeight.bold
+                          )
+                        ),
                         const SizedBox(height: 4),
-                        Text(invoice.timestamp.split(' ').first, style: const TextStyle(color: TariffColors.textMuted, fontSize: 10)),
+                        Text(
+                          invoice.timestamp.split(' ').first, 
+                          style: TextStyle(
+                            color: isDark ? TariffColors.textMuted : Colors.grey[400], 
+                            fontSize: 10
+                          )
+                        ),
                       ],
                     ),
                   ],
@@ -400,7 +523,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   runSpacing: 8,
                   children: [
                     _buildMiniChip(invoice.hsCode, TariffColors.amberPending),
-                    _buildMiniChip(invoice.dutyRate, TariffColors.textSecondary),
+                    _buildMiniChip(invoice.dutyRate, isDark ? TariffColors.textSecondary : Colors.blueGrey),
                   ],
                 ),
               ],
@@ -411,9 +534,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildMiniChip(String label, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6), border: Border.all(color: color.withValues(alpha: 0.3), width: 1)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.1 : 0.08), 
+        borderRadius: BorderRadius.circular(6), 
+        border: Border.all(color: color.withValues(alpha: isDark ? 0.3 : 0.2), width: 1)
+      ),
       child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
     );
   }

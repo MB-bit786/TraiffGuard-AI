@@ -28,27 +28,29 @@ class _AuditHistoryScreenState extends ConsumerState<AuditHistoryScreen> {
   Widget build(BuildContext context) {
     final filter = ref.watch(auditFilterProvider);
     final invoiceListAsync = ref.watch(invoiceListProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: TariffColors.navyDeep,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: TariffColors.navyMid,
+        backgroundColor: isDark ? TariffColors.navyMid : const Color(0xFF1565C0),
         elevation: 0,
         centerTitle: false,
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Audit History', style: TextStyle(color: TariffColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
-            Text('HISTORICAL MANIFESTS', style: TextStyle(color: TariffColors.textMuted, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2)),
+            Text('Audit History', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+            Text('HISTORICAL MANIFESTS', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2)),
           ],
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: Colors.white),
           onPressed: () => context.pop(),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: TariffColors.divider, height: 1),
+          child: Container(color: Colors.white.withValues(alpha: 0.1), height: 1),
         ),
       ),
       body: Column(
@@ -68,7 +70,7 @@ class _AuditHistoryScreenState extends ConsumerState<AuditHistoryScreen> {
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator(color: TariffColors.amberPending)),
-              error: (err, _) => Center(child: Text('Error: $err', style: const TextStyle(color: Colors.white))),
+              error: (err, _) => Center(child: Text('Error: $err', style: TextStyle(color: isDark ? Colors.white : Colors.black))),
             ),
           ),
         ],
@@ -77,6 +79,8 @@ class _AuditHistoryScreenState extends ConsumerState<AuditHistoryScreen> {
   }
 
   Widget _buildSearchBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
       child: TextField(
@@ -84,14 +88,14 @@ class _AuditHistoryScreenState extends ConsumerState<AuditHistoryScreen> {
         onChanged: (value) {
           setState(() => _searchQuery = value);
         },
-        style: const TextStyle(color: TariffColors.textPrimary, fontSize: 14),
+        style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 14),
         decoration: InputDecoration(
           hintText: 'Search consignee, cargo, or HS code...',
-          hintStyle: const TextStyle(color: TariffColors.textMuted),
-          prefixIcon: const Icon(Icons.search_rounded, color: TariffColors.textMuted),
+          hintStyle: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[400]),
+          prefixIcon: Icon(Icons.search_rounded, color: isDark ? TariffColors.textMuted : Colors.grey[400]),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.close_rounded, color: TariffColors.textMuted),
+                  icon: Icon(Icons.close_rounded, color: isDark ? TariffColors.textMuted : Colors.grey[400]),
                   onPressed: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
@@ -99,15 +103,15 @@ class _AuditHistoryScreenState extends ConsumerState<AuditHistoryScreen> {
                 )
               : null,
           filled: true,
-          fillColor: TariffColors.navySurface,
+          fillColor: isDark ? TariffColors.navySurface : Colors.white,
           contentPadding: const EdgeInsets.symmetric(vertical: 14),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: TariffColors.cardBorder),
+            borderSide: BorderSide(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: TariffColors.cardBorder),
+            borderSide: BorderSide(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -135,22 +139,24 @@ class _AuditHistoryScreenState extends ConsumerState<AuditHistoryScreen> {
   }
 
   Widget _filterChip(WidgetRef ref, String label, AuditFilter filter, bool isSelected) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: ChoiceChip(
         label: Text(label),
         labelStyle: TextStyle(
-          color: isSelected ? TariffColors.navyDeep : TariffColors.textSecondary,
+          color: isSelected ? (isDark ? TariffColors.navyDeep : Colors.white) : (isDark ? TariffColors.textSecondary : Colors.black54),
           fontSize: 12,
           fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
         ),
         selected: isSelected,
         onSelected: (val) => ref.read(auditFilterProvider.notifier).state = filter,
-        backgroundColor: TariffColors.navySurface,
-        selectedColor: TariffColors.amberPending,
+        backgroundColor: isDark ? TariffColors.navySurface : Colors.grey[200],
+        selectedColor: isDark ? TariffColors.amberPending : const Color(0xFF1565C0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         showCheckmark: false,
-        side: BorderSide(color: isSelected ? TariffColors.amberPending : TariffColors.cardBorder),
+        side: BorderSide(color: isSelected ? (isDark ? TariffColors.amberPending : const Color(0xFF1565C0)) : (isDark ? TariffColors.cardBorder : Colors.grey[300]!)),
       ),
     );
   }
@@ -200,13 +206,15 @@ class _AuditHistoryScreenState extends ConsumerState<AuditHistoryScreen> {
 
   Widget _buildHistoryCard(BuildContext context, WidgetRef ref, InvoiceEntity invoice) {
     final isSynced = invoice.status == 'synced';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: TariffColors.navySurface,
+      color: isDark ? TariffColors.navySurface : Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14), 
-        side: const BorderSide(color: TariffColors.cardBorder)
+        side: BorderSide(color: isDark ? TariffColors.cardBorder : Colors.grey[200]!)
       ),
       child: InkWell(
         onTap: () => context.push(AppRoutes.auditResultPath(invoice.id)),
@@ -219,21 +227,29 @@ class _AuditHistoryScreenState extends ConsumerState<AuditHistoryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHighlightedText(invoice.consignee, _searchQuery, style: const TextStyle(color: TariffColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
+                    _buildHighlightedText(
+                      invoice.consignee, 
+                      _searchQuery, 
+                      style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontWeight: FontWeight.bold, fontSize: 15)
+                    ),
                     const SizedBox(height: 4),
-                    _buildHighlightedText(invoice.cargoDescription, _searchQuery, style: const TextStyle(color: TariffColors.textSecondary, fontSize: 13)),
+                    _buildHighlightedText(
+                      invoice.cargoDescription, 
+                      _searchQuery, 
+                      style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 13)
+                    ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
                         _buildMiniBadgeWithHighlight(invoice.hsCode, _searchQuery, TariffColors.amberPending),
                         const SizedBox(width: 8),
-                        _miniBadge(isSynced ? 'VERIFIED' : 'PENDING', isSynced ? TariffColors.greenVerified : TariffColors.textMuted),
+                        _miniBadge(isSynced ? 'VERIFIED' : 'PENDING', isSynced ? TariffColors.greenVerified : (isDark ? TariffColors.textMuted : Colors.grey[400]!)),
                       ],
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: TariffColors.textMuted),
+              Icon(Icons.chevron_right_rounded, color: isDark ? TariffColors.textMuted : Colors.grey[300]),
             ],
           ),
         ),

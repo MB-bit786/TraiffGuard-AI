@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -30,17 +29,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
-  void _copyToClipboard(String text) {
-    Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('User ID copied to clipboard'),
-        backgroundColor: TariffColors.navyElevated,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
 
   Future<void> _handleSignOut() async {
     final confirmed = await showDialog<bool>(
@@ -77,15 +65,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final String email = user?.email ?? 'OPERATOR SESSION';
     final String uid = user?.uid ?? 'N/A';
     final String created = user?.metadata.creationTime?.toString().split(' ').first ?? 'Unknown';
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: TariffColors.navyDeep,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: TariffColors.navyMid,
+        backgroundColor: isDark ? TariffColors.navyMid : const Color(0xFF1565C0),
         elevation: 0,
         centerTitle: true,
-        title: const Text('Operator Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        // No leading button as this is a primary tab destination
+        title: const Text('Operator Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -106,9 +95,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 return Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-                  decoration: const BoxDecoration(
-                    color: TariffColors.navyMid,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: isDark ? TariffColors.navyMid : const Color(0xFF1565C0),
+                    borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(32),
                       bottomRight: Radius.circular(32),
                     ),
@@ -118,19 +107,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: TariffColors.amberPending, width: 3),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.8), width: 3),
                           boxShadow: [
                             BoxShadow(
-                              color: TariffColors.amberPending.withValues(alpha: 0.2),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 20,
                               spreadRadius: 5,
                             )
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.account_circle_rounded,
                           size: 100,
-                          color: TariffColors.amberPending,
+                          color: isDark ? TariffColors.amberPending : Colors.white,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -138,7 +127,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         fullName.toUpperCase(),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          color: TariffColors.textPrimary,
+                          color: Colors.white,
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.5,
@@ -148,21 +137,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Text(
                         email,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: TariffColors.textSecondary,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'VERIFIED SYSTEM OPERATOR',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: TariffColors.greenVerified,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 2.0,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'VERIFIED SYSTEM OPERATOR',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.5,
+                          ),
                         ),
                       ),
                     ],
@@ -177,17 +173,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionLabel('SECURITY CREDENTIALS'),
+                  _buildSectionLabel(context, 'ACCOUNT INFORMATION'),
                   const SizedBox(height: 16),
                   _buildInfoCard(
-                    'User Unique Identifier',
-                    uid,
-                    Icons.fingerprint_rounded,
-                    onTrailingTap: () => _copyToClipboard(uid),
-                    trailingIcon: Icons.copy_rounded,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
+                    context,
                     'Account Enrollment Date',
                     created,
                     Icons.calendar_today_rounded,
@@ -195,9 +184,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   
                   const SizedBox(height: 32),
                   
-                  _buildSectionLabel('SYSTEM TELEMETRY'),
+                  _buildSectionLabel(context, 'SYSTEM TELEMETRY'),
                   const SizedBox(height: 16),
                   _buildInfoCard(
+                    context,
                     'Total Synced Audit Reports',
                     ref.watch(dashboardStatsProvider).synced.toString(),
                     Icons.analytics_outlined,
@@ -205,9 +195,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   
                   const SizedBox(height: 32),
 
-                  _buildSectionLabel('LEGAL & COMPLIANCE'),
+                  _buildSectionLabel(context, 'LEGAL & COMPLIANCE'),
                   const SizedBox(height: 16),
                   _buildClickableCard(
+                    context,
                     'Platform Terms of Service',
                     'Review legal protocols and disclaimers',
                     Icons.gavel_rounded,
@@ -243,7 +234,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: Text(
                       '${AppConstants.appName} Enterprise ${AppConstants.appVersion}\nSecure Operator Protocol Active',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: TariffColors.textMuted, fontSize: 11, height: 1.5),
+                      style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[500], fontSize: 11, height: 1.5),
                     ),
                   ),
                   const SizedBox(height: 100), // Spacing for BottomNav
@@ -256,11 +247,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildSectionLabel(String label) {
+  Widget _buildSectionLabel(BuildContext context, String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Text(
       label,
-      style: const TextStyle(
-        color: TariffColors.textMuted,
+      style: TextStyle(
+        color: isDark ? TariffColors.textMuted : Colors.grey[600],
         fontSize: 10,
         fontWeight: FontWeight.w800,
         letterSpacing: 1.5,
@@ -268,12 +260,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildClickableCard(String title, String subtitle, IconData icon, {required VoidCallback onTap}) {
+  Widget _buildClickableCard(BuildContext context, String title, String subtitle, IconData icon, {required VoidCallback onTap}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       decoration: BoxDecoration(
-        color: TariffColors.navySurface,
+        color: isDark ? TariffColors.navySurface : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: TariffColors.cardBorder, width: 1),
+        border: Border.all(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!, width: 1),
       ),
       child: InkWell(
         onTap: onTap,
@@ -285,10 +279,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: TariffColors.navyDeep.withValues(alpha: 0.5),
+                  color: isDark ? TariffColors.navyDeep.withValues(alpha: 0.5) : Colors.blue[50],
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: TariffColors.amberPending, size: 20),
+                child: Icon(icon, color: isDark ? TariffColors.amberPending : const Color(0xFF1565C0), size: 20),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -297,17 +291,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(color: TariffColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 13, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(color: TariffColors.textMuted, fontSize: 11, fontWeight: FontWeight.w500),
+                      style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 11, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios_rounded, color: TariffColors.textMuted, size: 14),
+              Icon(Icons.arrow_forward_ios_rounded, color: isDark ? TariffColors.textMuted : Colors.grey[400], size: 14),
             ],
           ),
         ),
@@ -315,23 +309,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildInfoCard(String title, String value, IconData icon, {VoidCallback? onTrailingTap, IconData? trailingIcon}) {
+  Widget _buildInfoCard(BuildContext context, String title, String value, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: TariffColors.navySurface,
+        color: isDark ? TariffColors.navySurface : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: TariffColors.cardBorder, width: 1),
+        border: Border.all(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!, width: 1),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: TariffColors.navyDeep.withValues(alpha: 0.5),
+              color: isDark ? TariffColors.navyDeep.withValues(alpha: 0.5) : Colors.blue[50],
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: TariffColors.textSecondary, size: 20),
+            child: Icon(icon, color: isDark ? TariffColors.textSecondary : Colors.blueGrey, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -340,13 +336,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(color: TariffColors.textMuted, fontSize: 11, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 11, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
-                    color: TariffColors.textPrimary,
+                  style: TextStyle(
+                    color: isDark ? TariffColors.textPrimary : Colors.black87,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     fontFamily: 'monospace',
@@ -355,11 +351,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ],
             ),
           ),
-          if (trailingIcon != null)
-            IconButton(
-              onPressed: onTrailingTap,
-              icon: Icon(trailingIcon, color: TariffColors.textMuted, size: 18),
-            ),
         ],
       ),
     );

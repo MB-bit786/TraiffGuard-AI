@@ -36,6 +36,8 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   ];
   static const List<String> _shippingMethods = ['Air Freight', 'Sea Freight'];
 
+
+
   @override
   void initState() {
     super.initState();
@@ -124,37 +126,40 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   @override
   Widget build(BuildContext context) {
     final connection = ref.watch(connectionProvider);
-    final isOnline = connection.isOnline;
+    final isOnline = connection.effectivelyOnline;
     final isOffline = !isOnline;
     final isAnalyzing = ref.watch(invoiceFormNotifierProvider.select((s) => s.isAnalyzing));
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: TariffColors.navyDeep,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: _buildAppBar(context),
       body: _buildBody(isOffline, isAnalyzing),
     );
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AppBar(
-      backgroundColor: TariffColors.navyMid,
+      backgroundColor: isDark ? TariffColors.navyMid : const Color(0xFF1565C0),
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
         onPressed: () => context.pop(),
         icon: const Icon(
           Icons.arrow_back_ios_new_rounded,
-          color: TariffColors.textSecondary,
+          color: Colors.white,
           size: 20,
         ),
       ),
-      title: const Column(
+      title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'New Customs Audit',
             style: TextStyle(
-              color: TariffColors.textPrimary,
+              color: Colors.white,
               fontSize: 17,
               fontWeight: FontWeight.w700,
             ),
@@ -162,7 +167,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           Text(
             'INVOICE ENTRY FORM',
             style: TextStyle(
-              color: TariffColors.textMuted,
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 10,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.8,
@@ -175,22 +180,22 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           margin: const EdgeInsets.only(right: 16),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: TariffColors.navySurface,
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: TariffColors.cardBorder, width: 1),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
           ),
           child: const Row(
             children: [
               Icon(
                 Icons.save_outlined,
-                color: TariffColors.textSecondary,
+                color: Colors.white,
                 size: 15,
               ),
               SizedBox(width: 5),
               Text(
                 'Draft',
                 style: TextStyle(
-                  color: TariffColors.textSecondary,
+                  color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -201,7 +206,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       ],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
-        child: Container(height: 1, color: TariffColors.divider),
+        child: Container(height: 1, color: Colors.white.withValues(alpha: 0.1)),
       ),
     );
   }
@@ -344,12 +349,14 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   }
 
   Widget _buildSectionLabel(String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Row(
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: TariffColors.textMuted,
+          style: TextStyle(
+            color: isDark ? TariffColors.textMuted : Colors.grey[600],
             fontSize: 10,
             fontWeight: FontWeight.w800,
             letterSpacing: 2.0,
@@ -357,7 +364,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Container(height: 1, color: TariffColors.divider),
+          child: Container(height: 1, color: isDark ? TariffColors.divider : Colors.grey[300]),
         ),
       ],
     );
@@ -372,12 +379,14 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
     String? Function(String?)? validator,
     Widget? suffix,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return TextFormField(
       controller: controller,
       keyboardType: inputType,
       validator: validator,
-      style: const TextStyle(
-        color: TariffColors.textPrimary,
+      style: TextStyle(
+        color: isDark ? TariffColors.textPrimary : Colors.black87,
         fontSize: 14,
         fontWeight: FontWeight.w500,
       ),
@@ -385,28 +394,28 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
         labelText: label,
         hintText: hint,
         suffixIcon: suffix,
-        prefixIcon: Icon(icon, size: 18, color: TariffColors.textMuted),
-        labelStyle: const TextStyle(
-          color: TariffColors.textSecondary,
+        prefixIcon: Icon(icon, size: 18, color: isDark ? TariffColors.textMuted : Colors.grey[400]),
+        labelStyle: TextStyle(
+          color: isDark ? TariffColors.textSecondary : Colors.grey[700],
           fontSize: 13,
         ),
-        hintStyle: const TextStyle(
-          color: TariffColors.textMuted,
+        hintStyle: TextStyle(
+          color: isDark ? TariffColors.textMuted : Colors.grey[400],
           fontSize: 13,
         ),
         filled: true,
-        fillColor: TariffColors.navySurface,
+        fillColor: isDark ? TariffColors.navySurface : Colors.white,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide:
-              const BorderSide(color: TariffColors.inputBorder, width: 1),
+              BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide:
-              const BorderSide(color: TariffColors.inputBorder, width: 1),
+              BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -429,6 +438,8 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   }
 
   Widget _buildCargoDescriptionField() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return TextFormField(
       controller: _cargoDescController,
       maxLines: 5,
@@ -436,8 +447,8 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       validator: (v) => (v == null || v.trim().length < 10)
           ? 'Please describe the cargo (min. 10 characters)'
           : null,
-      style: const TextStyle(
-        color: TariffColors.textPrimary,
+      style: TextStyle(
+        color: isDark ? TariffColors.textPrimary : Colors.black87,
         fontSize: 14,
         height: 1.6,
       ),
@@ -450,41 +461,41 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
             '💡 Describe the cargo in plain words to allow AI classification. Be specific — include material, composition, end-use, and voltage ratings if applicable.',
         helperMaxLines: 3,
         hintMaxLines: 4,
-        prefixIcon: const Padding(
-          padding: EdgeInsets.only(bottom: 60),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(bottom: 60),
           child: Icon(
             Icons.description_rounded,
             size: 18,
-            color: TariffColors.textMuted,
+            color: isDark ? TariffColors.textMuted : Colors.grey[400],
           ),
         ),
-        labelStyle: const TextStyle(
-          color: TariffColors.textSecondary,
+        labelStyle: TextStyle(
+          color: isDark ? TariffColors.textSecondary : Colors.grey[700],
           fontSize: 13,
         ),
-        hintStyle: const TextStyle(
-          color: TariffColors.textMuted,
+        hintStyle: TextStyle(
+          color: isDark ? TariffColors.textMuted : Colors.grey[400],
           fontSize: 13,
           height: 1.6,
         ),
-        helperStyle: const TextStyle(
-          color: TariffColors.textMuted,
+        helperStyle: TextStyle(
+          color: isDark ? TariffColors.textMuted : Colors.grey[600],
           fontSize: 11.5,
           height: 1.5,
         ),
         filled: true,
-        fillColor: TariffColors.navySurface,
+        fillColor: isDark ? TariffColors.navySurface : Colors.white,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide:
-              const BorderSide(color: TariffColors.inputBorder, width: 1),
+              BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide:
-              const BorderSide(color: TariffColors.inputBorder, width: 1),
+              BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),

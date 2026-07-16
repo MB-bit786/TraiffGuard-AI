@@ -33,4 +33,43 @@ class TariffColors {
   static const Color onlineGlow = Color(0xFF00E676);
   static const Color inputBorder = Color(0xFF2A4A7A);
   static const Color inputFocusBorder = Color(0xFFFFB300);
+
+  // Semantic Helpers
+  static Color background(BuildContext context) => Theme.of(context).scaffoldBackgroundColor;
+  
+  static Color surface(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? navySurface 
+        : Colors.white;
+  }
+
+  static Color appBar(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? navyMid 
+        : const Color(0xFF1565C0);
+  }
+
+  static Color card(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? navySurface 
+        : Colors.white;
+  }
+
+  static Color text(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? textPrimary 
+        : Colors.black87;
+  }
+
+  static Color mutedText(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? textMuted 
+        : Colors.black54;
+  }
+
+  static Color border(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? cardBorder 
+        : Colors.grey[300]!;
+  }
 }

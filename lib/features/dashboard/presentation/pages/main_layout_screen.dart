@@ -22,23 +22,26 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: TariffColors.navyDeep,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(
-            top: BorderSide(color: TariffColors.divider, width: 1),
+            top: BorderSide(color: isDark ? TariffColors.divider : Colors.grey[300]!, width: 1),
           ),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
-          backgroundColor: TariffColors.navyMid,
+          backgroundColor: isDark ? TariffColors.navyMid : Colors.white,
           selectedItemColor: TariffColors.amberPending,
-          unselectedItemColor: TariffColors.textMuted,
+          unselectedItemColor: isDark ? TariffColors.textMuted : Colors.grey[400],
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
           type: BottomNavigationBarType.fixed,

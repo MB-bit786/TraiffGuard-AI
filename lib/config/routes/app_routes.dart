@@ -12,6 +12,7 @@ class AppRoutes {
   static const String trash = '/trash';
   static const String terms = '/terms';
   static const String tariffDirectory = '/tariff-directory';
+  static const String settings = '/settings';
 
   // Helper methods to generate paths with parameters
   static String auditResultPath(String id) => '/audit-result/$id';

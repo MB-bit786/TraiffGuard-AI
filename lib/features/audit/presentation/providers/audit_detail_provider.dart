@@ -5,7 +5,7 @@ import '../../data/repository/audit_repository_impl.dart';
 import '../../domain/usecases/get_audit_detail_use_case.dart';
 import 'package:hscode_auditor/features/invoice/data/repository/invoice_repository_impl.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
-import '../../../../core/services/auth_service.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 
 final auditRepositoryProvider = Provider<AuditRepository>((ref) {
   // We reuse the LocalDataSource from Invoice for now as they share the SQLite instance

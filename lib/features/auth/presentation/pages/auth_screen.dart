@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:hscode_auditor/core/services/auth_service.dart';
+import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/core/constants/auth_error_constants.dart';
 
@@ -85,10 +85,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
     setState(() => _isLoading = true);
 
     try {
-      final authService = ref.read(authServiceProvider);
+      final authService = ref.read(authUseCasesProvider);
       
       if (_isLogin) {
-        await authService.signInWithEmail(
+        await authService.signIn(
           _emailController.text.trim(),
           _passwordController.text,
         );
@@ -96,7 +96,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
         ref.read(registrationInProgressProvider.notifier).state = true;
         
         try {
-          await authService.registerWithEmail(
+          await authService.signUp(
             email: _emailController.text.trim(),
             password: _passwordController.text,
             fullName: _nameController.text.trim(),

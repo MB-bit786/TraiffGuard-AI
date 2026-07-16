@@ -6,7 +6,7 @@ import 'package:hscode_auditor/features/invoice/data/data_sources/invoice_remote
 import 'package:hscode_auditor/core/services/sql_database_service.dart';
 import 'package:hscode_auditor/features/invoice/domain/usecases/invoice_use_cases.dart';
 import 'package:hscode_auditor/core/services/gemini_audit_service.dart';
-import 'package:hscode_auditor/core/services/auth_service.dart';
+import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
 
 final invoiceRepositoryProvider = Provider<InvoiceRepository>((ref) {
   return InvoiceRepositoryImpl(
@@ -19,7 +19,7 @@ final invoiceRepositoryProvider = Provider<InvoiceRepository>((ref) {
 final invoiceUseCasesProvider = Provider<InvoiceUseCases>((ref) {
   final repository = ref.watch(invoiceRepositoryProvider);
   final aiService = ref.watch(geminiAuditServiceProvider);
-  final authService = ref.watch(authServiceProvider);
+  final authService = ref.watch(authUseCasesProvider);
   return InvoiceUseCases(
     repository: repository,
     aiService: aiService,

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../invoice/domain/entities/invoice_entity.dart';
-import '../../../../core/services/auth_service.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../invoice/domain/usecases/trash_use_cases.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
 

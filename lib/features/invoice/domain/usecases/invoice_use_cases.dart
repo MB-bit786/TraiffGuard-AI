@@ -3,7 +3,7 @@ import '../entities/invoice_entity.dart';
 import '../../../audit/domain/entities/hs_audit_result_entity.dart';
 import '../repository/invoice_repository.dart';
 import 'package:hscode_auditor/core/services/gemini_audit_service.dart';
-import 'package:hscode_auditor/core/services/auth_service.dart';
+import 'package:hscode_auditor/features/auth/domain/usecases/auth_use_cases.dart';
 
 class AuditParams {
   final String invoiceNumber;
@@ -47,7 +47,7 @@ class AuditResponse {
 class InvoiceUseCases {
   final InvoiceRepository repository;
   final GeminiAuditService aiService;
-  final AuthService authService;
+  final AuthUseCases authService;
 
   InvoiceUseCases({
     required this.repository, 

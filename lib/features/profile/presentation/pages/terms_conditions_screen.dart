@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
-import 'package:hscode_auditor/core/services/auth_service.dart';
+import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hscode_auditor/core/constants/app_constants.dart';
 import 'package:go_router/go_router.dart';
 
@@ -44,7 +44,7 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
 
     try {
       final authUseCases = ref.read(authUseCasesProvider);
-      final user = ref.read(authServiceProvider).currentUser;
+      final user = ref.read(authUseCasesProvider).currentUser;
       if (user != null) {
         await authUseCases.acceptTerms(user.uid);
         

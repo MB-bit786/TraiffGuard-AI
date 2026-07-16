@@ -4,7 +4,7 @@ import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/features/search/presentation/providers/tariff_search_provider.dart';
 import 'package:hscode_auditor/features/audit/presentation/providers/audit_detail_provider.dart';
 import 'package:hscode_auditor/core/services/auto_sync_service.dart';
-import '../../../../core/services/auth_service.dart';
+import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
 import '../../../audit/data/models/hs_audit_result_model.dart';
 import '../providers/invoice_list_provider.dart';
 import '../../../invoice/presentation/providers/invoice_providers.dart';

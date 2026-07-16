@@ -9,7 +9,7 @@ import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_en
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
-import 'package:hscode_auditor/core/services/auth_service.dart';
+import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
 
 class AutoSyncService {
@@ -60,7 +60,7 @@ class AutoSyncService {
     if (_isSyncing) return;
     final isOnline = _ref.read(connectionProvider).effectivelyOnline;
     if (!isOnline) return;
-    final user = _ref.read(authServiceProvider).currentUser;
+    final user = _ref.read(authUseCasesProvider).currentUser;
     if (user == null) return;
     final String userId = user.uid;
 

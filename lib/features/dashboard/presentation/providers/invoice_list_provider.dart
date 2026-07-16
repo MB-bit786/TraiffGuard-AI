@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
-import 'package:hscode_auditor/core/services/auth_service.dart';
+import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hscode_auditor/features/invoice/domain/usecases/invoice_use_cases.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart';
 import 'package:hscode_auditor/core/services/auto_sync_service.dart';

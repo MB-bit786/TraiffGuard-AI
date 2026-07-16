@@ -7,8 +7,7 @@ import 'package:hscode_auditor/features/dashboard/presentation/providers/dashboa
 import 'package:hscode_auditor/features/dashboard/presentation/providers/audit_filter_provider.dart';
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
-import 'package:hscode_auditor/features/search/presentation/pages/tariff_directory_screen.dart';
-import 'package:hscode_auditor/core/services/auth_service.dart';
+import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hscode_auditor/core/constants/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hscode_auditor/config/routes/app_routes.dart';

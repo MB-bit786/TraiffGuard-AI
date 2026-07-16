@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
-import 'package:hscode_auditor/core/services/auth_service.dart';
+import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hscode_auditor/features/invoice/domain/usecases/invoice_use_cases.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart';
 
@@ -66,7 +66,7 @@ class InvoiceFormNotifier extends StateNotifier<InvoiceFormState> {
     }
 
     final bool effectivelyOnline = isUserOnline && hasHandshake;
-    final String userId = _ref.read(authServiceProvider).currentUser?.uid ?? 'anonymous';
+    final String userId = _ref.read(authUseCasesProvider).currentUser?.uid ?? 'anonymous';
 
     state = state.copyWith(isAnalyzing: true, error: null, result: null);
 

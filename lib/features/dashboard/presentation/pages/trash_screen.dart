@@ -12,24 +12,37 @@ class TrashScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trashListAsync = ref.watch(trashListProvider);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: TariffColors.navyDeep,
       appBar: AppBar(
-        backgroundColor: isDark ? TariffColors.navyMid : const Color(0xFF1565C0),
+        backgroundColor: TariffColors.navyMid,
         elevation: 0,
         centerTitle: false,
-        title: Column(
+        title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Trash Bin', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
-            Text('RECOVER OR ERASE AUDITS', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2)),
+            Text(
+              'Trash Bin',
+              style: TextStyle(
+                color: TariffColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              'RECOVER OR ERASE AUDITS',
+              style: TextStyle(
+                color: TariffColors.textMuted,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
           ],
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () => context.pop(),
         ),
         actions: [
@@ -38,18 +51,20 @@ class TrashScreen extends ConsumerWidget {
               await ref.read(invoiceListProvider.notifier).syncWithCloud();
               ref.read(trashListProvider.notifier).refresh();
             },
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 22),
+            icon: const Icon(Icons.refresh_rounded, color: TariffColors.textMuted, size: 22),
           ),
           const SizedBox(width: 8),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: Colors.white.withValues(alpha: 0.1), height: 1),
+          child: Container(color: TariffColors.divider, height: 1),
         ),
       ),
       body: trashListAsync.when(
         data: (invoices) {
-          if (invoices.isEmpty) return _buildEmptyState(context);
+          if (invoices.isEmpty) {
+            return _buildEmptyState();
+          }
           return ListView.builder(
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.all(16),
@@ -58,34 +73,51 @@ class TrashScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator(color: TariffColors.amberPending)),
-        error: (err, _) => Center(child: Text('Error loading trash: $err', style: TextStyle(color: isDark ? Colors.white : Colors.black))),
+        error: (err, _) => Center(
+          child: Text('Error loading trash: $err', style: const TextStyle(color: Colors.white)),
+        ),
       ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.delete_outline_rounded, size: 64, color: isDark ? TariffColors.textMuted.withValues(alpha: 0.5) : Colors.grey[300]),
+          Icon(
+            Icons.delete_outline_rounded,
+            size: 64,
+            color: TariffColors.textMuted.withValues(alpha: 0.5),
+          ),
           const SizedBox(height: 16),
-          Text('Your Trash Bin is empty', style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black54, fontSize: 17, fontWeight: FontWeight.w600)),
+          const Text(
+            'Your Trash Bin is empty',
+            style: TextStyle(
+              color: TariffColors.textPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('Soft-deleted audits will appear here.', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[500], fontSize: 13)),
+          const Text(
+            'Soft-deleted audits will appear here.',
+            style: TextStyle(color: TariffColors.textMuted, fontSize: 13),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildTrashCard(BuildContext context, WidgetRef ref, InvoiceEntity invoice) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: isDark ? TariffColors.navySurface : Colors.white,
+      color: TariffColors.navySurface,
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: isDark ? TariffColors.cardBorder : Colors.grey[200]!, width: 1)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: TariffColors.cardBorder, width: 1),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -94,11 +126,32 @@ class TrashScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(invoice.consignee, style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 15, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(
+                    invoice.consignee,
+                    style: const TextStyle(
+                      color: TariffColors.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 4),
-                  Text(invoice.cargoDescription, style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(
+                    invoice.cargoDescription,
+                    style: const TextStyle(color: TariffColors.textSecondary, fontSize: 13),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 8),
-                  Text('ID: ${invoice.id}', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[400], fontSize: 11, fontFamily: 'monospace')),
+                  Text(
+                    'ID: ${invoice.id}',
+                    style: const TextStyle(
+                      color: TariffColors.textMuted,
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -112,11 +165,11 @@ class TrashScreen extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).clearSnackBars();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Audit restored to Dashboard', style: TextStyle(fontWeight: FontWeight.w600)),
-                      duration: const Duration(seconds: 2),
+                    const SnackBar(
+                      content: Text('Audit restored to Dashboard'),
+                      backgroundColor: Color(0xFFFFB300),
+                      duration: Duration(seconds: 2),
                       behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   );
                 }
@@ -134,16 +187,24 @@ class TrashScreen extends ConsumerWidget {
   }
 
   void _confirmHardDelete(BuildContext context, WidgetRef ref, InvoiceEntity invoice) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: isDark ? TariffColors.navyMid : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!)),
-        title: Text('Erase Permanently?', style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontWeight: FontWeight.bold)),
-        content: Text('This will hard-delete audit ${invoice.id} from local storage. This action cannot be undone.', style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 14)),
+        backgroundColor: TariffColors.navyMid,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Erase Permanently?',
+          style: TextStyle(color: TariffColors.textPrimary, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'This will hard-delete audit ${invoice.id} from local storage. This action cannot be undone.',
+          style: const TextStyle(color: TariffColors.textSecondary, fontSize: 14),
+        ),
         actions: [
-          TextButton(onPressed: () => context.pop(), child: Text('CANCEL', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600]))),
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('CANCEL', style: TextStyle(color: TariffColors.textMuted)),
+          ),
           TextButton(
             onPressed: () async {
               context.pop();
@@ -151,11 +212,11 @@ class TrashScreen extends ConsumerWidget {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Audit erased forever', style: TextStyle(fontWeight: FontWeight.w600)),
-                    duration: const Duration(seconds: 2),
+                  const SnackBar(
+                    content: Text('Audit erased forever'),
+                    backgroundColor: Color(0xFFFFB300),
+                    duration: Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 );
               }

@@ -1,8 +1,4 @@
 - [x] Update `DashboardScreen`: Fix "Total Audits" card visibility in light mode
 - [x] Update `AuditResultScreen`: Make bottom bar and buttons theme-aware
 - [x] Update `TariffDirectoryScreen`: Perform full theme overhaul
-- [x] Update `EditAuditScreen`: Make form fields and layout theme-aware
-- [x] Fix: Add missing `AppConstants` import to `EditAuditScreen`
-- [x] Refactor: Move master data lists (currencies, months, shipping) to `AppConstants`
-- [x] Update `TermsConditionsScreen`: Refine legal text and buttons for light mode
 - [x] Verify all changes in Light and Dark modes

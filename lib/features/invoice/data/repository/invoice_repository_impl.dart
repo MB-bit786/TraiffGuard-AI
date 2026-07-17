@@ -1,10 +1,10 @@
 import '../../domain/entities/invoice_entity.dart';
-import '../../../audit/domain/entities/hs_audit_result_entity.dart';
+import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 import '../../domain/repository/invoice_repository.dart';
 import '../data_sources/invoice_local_data_source.dart';
 import '../data_sources/invoice_remote_data_source.dart';
 import '../models/invoice_model.dart';
-import '../../../audit/data/models/hs_audit_result_model.dart';
+import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
 import '../../../../core/services/sql_database_service.dart';
 
 class InvoiceRepositoryImpl implements InvoiceRepository {

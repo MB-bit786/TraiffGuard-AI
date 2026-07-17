@@ -1,4 +1,4 @@
-import '../entities/hs_audit_result_entity.dart';
+import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 import '../repository/audit_repository.dart';
 
 class GetAuditDetailUseCase {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'dashboard_screen.dart';
 import 'package:hscode_auditor/features/profile/presentation/pages/profile_screen.dart';
+import 'package:hscode_auditor/core/providers/auto_sync_provider.dart';
 
 /// Navigation Shell that unifies the Dashboard and Profile destinations via a BottomNavigationBar.
 class MainLayoutScreen extends ConsumerStatefulWidget {
@@ -22,6 +23,9 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Bootstrap the background sync service
+    ref.watch(autoSyncInitializerProvider);
+
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 

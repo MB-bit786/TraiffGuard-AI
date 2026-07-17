@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/features/search/presentation/providers/tariff_search_provider.dart';
 import 'package:hscode_auditor/features/audit/presentation/providers/audit_detail_provider.dart';
-import 'package:hscode_auditor/core/services/auto_sync_service.dart';
+import 'package:hscode_auditor/core/providers/auto_sync_provider.dart';
 import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
-import '../../data/models/hs_audit_result_model.dart';
+import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
 import '../../../dashboard/presentation/providers/invoice_list_provider.dart';
 import '../../../invoice/presentation/providers/invoice_providers.dart';
 import '../../../invoice/domain/entities/invoice_entity.dart';
@@ -478,9 +478,9 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark ? TariffColors.navySurface : Colors.blue[50],
+        color: isDark ? TariffColors.navySurface : const Color(0xFFE3F2FD),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: TariffColors.amberPending.withValues(alpha: isDark ? 0.2 : 0.4)),
+        border: Border.all(color: TariffColors.amberPending.withValues(alpha: isDark ? 0.2 : 0.5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,7 +490,7 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
           Expanded(
             child: Text(
               'Changes save instantly. High-fidelity AI analysis (duty rates, descriptions) will complete in the background.',
-              style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.blueGrey[800], fontSize: 12, height: 1.4),
+              style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.blueGrey[800], fontSize: 12, height: 1.4, fontWeight: isDark ? FontWeight.normal : FontWeight.w500),
             ),
           ),
         ],

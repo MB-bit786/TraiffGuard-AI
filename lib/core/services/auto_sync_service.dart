@@ -9,22 +9,22 @@ import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.d
 import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
 import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
-import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
 
+/// Principal Background Service for cargo manifest synchronization.
+/// Handles network state changes, heartbeats, and database reconciliation.
 class AutoSyncService {
   final InvoiceRepository _repository;
   final GeminiAuditService _geminiService;
   final Ref _ref;
-  StreamSubscription? _connectivitySubscription;
   Timer? _heartbeatTimer;
   bool _isSyncing = false;
   String? _activeUserId;
 
-  AutoSyncService(this._repository, this._geminiService, this._ref) {
-    _init();
-  }
+  AutoSyncService(this._repository, this._geminiService, this._ref);
 
-  Future<void> _init() async {
+  /// Initializes background listeners for connectivity and authentication states.
+  void startListening() {
+    debugPrint('[SYNC] Starting background synchronization listener...');
     _ref.listen(authStateProvider, (previous, next) {
       final user = next.value;
       if (user != null && user.uid != _activeUserId) {
@@ -35,11 +35,12 @@ class AutoSyncService {
       }
     }, fireImmediately: true);
 
-    // Initial sync check
+    // Initial sync check if already online
     if (_ref.read(connectionProvider).effectivelyOnline) {
       syncPendingAudits();
     }
 
+    // High-reliability heartbeat for state recovery
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       final isOnline = _ref.read(connectionProvider).effectivelyOnline;
       if (isOnline) {
@@ -48,15 +49,19 @@ class AutoSyncService {
     });
   }
 
+  /// Iterates through local 'offlineDraft' records and pushes them to AI for auditing.
   Future<void> syncPendingAudits() async {
     if (_isSyncing) return;
+    
     final isOnline = _ref.read(connectionProvider).effectivelyOnline;
     if (!isOnline) return;
+    
     final user = _ref.read(authUseCasesProvider).currentUser;
     if (user == null) return;
+    
     final String userId = user.uid;
-
     _isSyncing = true;
+
     try {
       final List<HsAuditResultEntity> pendingDrafts = (await _repository.getPendingDraftResults(userId))
           .where((draft) => !draft.isDeleted).toList();
@@ -66,7 +71,9 @@ class AutoSyncService {
         return;
       }
 
+      debugPrint('[SYNC] Processing ${pendingDrafts.length} pending manifest(s)...');
       int successCount = 0;
+
       for (final draft in pendingDrafts) {
         try {
           final String jsonResponse = await _geminiService.fetchAiCustomsAudit(
@@ -133,17 +140,20 @@ class AutoSyncService {
 
           await _repository.updateAuditSyncStatus(updatedManifest, upgradedResult);
           successCount++;
+          
+          // Small delay to prevent API rate-limit saturation
           await Future.delayed(const Duration(milliseconds: 500));
         } catch (e) {
-          debugPrint('[SYNC] Sync failed for record: $e');
+          debugPrint('[SYNC] Record-level sync failure: $e');
         }
       }
 
       if (successCount > 0) {
+        debugPrint('[SYNC] Successfully reconciled $successCount records.');
         _ref.read(invoiceListProvider.notifier).fetchInvoices();
       }
     } catch (e) {
-      debugPrint('[SYNC] Global sync error: $e');
+      debugPrint('[SYNC] Critical pipeline error: $e');
     } finally {
       _isSyncing = false;
     }
@@ -158,22 +168,8 @@ class AutoSyncService {
     );
   }
 
+  /// Terminates all background activity.
   void dispose() {
-    _connectivitySubscription?.cancel();
     _heartbeatTimer?.cancel();
   }
 }
-
-final autoSyncServiceProvider = Provider<AutoSyncService>((ref) {
-  final repository = ref.watch(inv.invoiceRepositoryProvider);
-  final gemini = ref.watch(geminiAuditServiceProvider);
-  final service = AutoSyncService(repository, gemini, ref);
-
-  ref.listen(connectionProvider, (previous, next) {
-    if (next.effectivelyOnline && (previous == null || !previous.effectivelyOnline)) {
-      service.syncPendingAudits();
-    }
-  });
-
-  return service;
-});

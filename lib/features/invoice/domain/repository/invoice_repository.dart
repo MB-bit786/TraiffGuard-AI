@@ -1,5 +1,5 @@
 import '../entities/invoice_entity.dart';
-import '../../../audit/domain/entities/hs_audit_result_entity.dart';
+import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 
 abstract class InvoiceRepository {
   Future<void> cacheInvoiceManifest(InvoiceEntity invoice, {HsAuditResultEntity? auditResult});

@@ -115,7 +115,7 @@ class _AuditHistoryScreenState extends ConsumerState<AuditHistoryScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: TariffColors.amberPending, width: 1.5),
+            borderSide: BorderSide(color: isDark ? TariffColors.amberPending : const Color(0xFF1565C0), width: 1.5),
           ),
         ),
       ),
@@ -303,24 +303,26 @@ class _AuditHistoryScreenState extends ConsumerState<AuditHistoryScreen> {
   }
 
   Widget _buildMiniBadgeWithHighlight(String text, String query, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1), 
         borderRadius: BorderRadius.circular(6), 
-        border: Border.all(color: color.withValues(alpha: 0.2))
+        border: Border.all(color: color.withValues(alpha: isDark ? 0.2 : 0.4))
       ),
       child: _buildHighlightedText(text, query, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
     );
   }
 
   Widget _miniBadge(String text, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1), 
         borderRadius: BorderRadius.circular(6), 
-        border: Border.all(color: color.withValues(alpha: 0.2))
+        border: Border.all(color: color.withValues(alpha: isDark ? 0.2 : 0.4))
       ),
       child: Text(text, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
     );

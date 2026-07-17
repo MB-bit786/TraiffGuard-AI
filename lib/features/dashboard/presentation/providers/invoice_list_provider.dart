@@ -3,7 +3,7 @@ import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.d
 import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hscode_auditor/features/invoice/domain/usecases/invoice_use_cases.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart';
-import 'package:hscode_auditor/core/services/auto_sync_service.dart';
+import 'package:hscode_auditor/core/providers/auto_sync_provider.dart';
 
 final invoiceListProvider = StateNotifierProvider.autoDispose<InvoiceListNotifier, AsyncValue<List<InvoiceEntity>>>((ref) {
   final invoiceUseCases = ref.watch(invoiceUseCasesProvider);

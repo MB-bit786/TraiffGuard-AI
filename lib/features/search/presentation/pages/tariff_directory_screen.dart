@@ -216,8 +216,10 @@ class _TariffDirectoryScreenState extends ConsumerState<TariffDirectoryScreen> {
     final chipColor = isHighTariff ? TariffColors.amberPending : TariffColors.greenVerified;
     final chipBg = isDark 
         ? (isHighTariff ? TariffColors.amberPendingSoft : TariffColors.greenVerifiedSoft)
-        : (isHighTariff ? Colors.amber[50]! : Colors.green[50]!);
-    final chipBorder = isHighTariff ? TariffColors.amberPendingBorder : TariffColors.greenVerifiedBorder;
+        : (isHighTariff ? const Color(0xFFFFF8E1) : const Color(0xFFE8F5E9));
+    final chipBorder = isDark 
+        ? (isHighTariff ? TariffColors.amberPendingBorder : TariffColors.greenVerifiedBorder)
+        : (isHighTariff ? Colors.amber[300]! : Colors.green[300]!);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -264,7 +266,7 @@ class _TariffDirectoryScreenState extends ConsumerState<TariffDirectoryScreen> {
                       decoration: BoxDecoration(
                         color: chipBg,
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: chipBorder.withValues(alpha: 0.4), width: 1),
+                        border: Border.all(color: chipBorder.withValues(alpha: 0.6), width: 1),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

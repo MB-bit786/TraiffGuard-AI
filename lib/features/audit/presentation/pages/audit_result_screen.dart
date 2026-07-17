@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
-import '../../domain/entities/hs_audit_result_entity.dart';
-import '../providers/audit_detail_provider.dart';
+import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
+import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
+import 'package:hscode_auditor/features/audit/presentation/providers/audit_detail_provider.dart';
 import 'package:hscode_auditor/core/services/pdf_export_service.dart';
 import 'package:hscode_auditor/core/constants/app_constants.dart';
 
@@ -38,9 +39,9 @@ class AuditResultScreen extends ConsumerWidget {
           }
           return _buildScaffold(context, ref, fetchedResult);
         },
-        loading: () => const Scaffold(
-          backgroundColor: TariffColors.navyDeep,
-          body: Center(child: CircularProgressIndicator(color: TariffColors.amberPending)),
+        loading: () => Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: const Center(child: CircularProgressIndicator(color: TariffColors.amberPending)),
         ),
         error: (err, _) => _buildErrorScaffold(context, 'Critical: $err'),
       );
@@ -57,19 +58,22 @@ class AuditResultScreen extends ConsumerWidget {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: _buildAppBar(context, ref, finalResult),
       body: _buildBody(context, finalResult),
-      bottomNavigationBar: _buildBottomBar(context, finalResult),
+      bottomNavigationBar: _buildBottomBar(context, ref, finalResult),
     );
   }
 
   Widget _buildErrorScaffold(BuildContext context, String message) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: TariffColors.navyDeep,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: TariffColors.navyMid,
+        backgroundColor: isDark ? TariffColors.navyMid : const Color(0xFF1565C0),
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: TariffColors.textSecondary, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
         ),
       ),
       body: Center(
@@ -83,14 +87,14 @@ class AuditResultScreen extends ConsumerWidget {
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: TariffColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600),
+                style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: () => context.pop(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: TariffColors.navyElevated,
-                  foregroundColor: TariffColors.textPrimary,
+                  backgroundColor: isDark ? TariffColors.navyElevated : const Color(0xFF1565C0),
+                  foregroundColor: Colors.white,
                 ),
                 child: const Text('Go Back'),
               ),
@@ -201,6 +205,18 @@ class AuditResultScreen extends ConsumerWidget {
   }
 
   Widget _buildBody(BuildContext context, HsAuditResultEntity result) {
+    if (result.riskLevel == RiskLevel.invalidInput) {
+      return ListView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildRiskWarningCard(context, result),
+          const SizedBox(height: 20),
+          _buildInvoiceMetaCard(context, result),
+        ],
+      );
+    }
+
     return ListView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(16),
@@ -369,54 +385,60 @@ class AuditResultScreen extends ConsumerWidget {
   }
 
   Widget _buildRiskWarningCard(BuildContext context, HsAuditResultEntity result) {
+    if (result.complianceWarnings.isEmpty) return const SizedBox.shrink();
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isHighRisk = result.riskLevel == RiskLevel.high;
-    final riskColor = isHighRisk ? TariffColors.crimsonRisk : TariffColors.amberPending;
-    final riskBgColor = isDark 
-        ? (isHighRisk ? TariffColors.crimsonRiskSoft : TariffColors.amberPendingSoft)
-        : (isHighRisk ? Colors.red[50]! : Colors.amber[50]!);
-    final riskBorderColor = isDark
-        ? (isHighRisk ? TariffColors.crimsonRiskBorder.withValues(alpha: 0.5) : TariffColors.amberPendingBorder.withValues(alpha: 0.5))
-        : (isHighRisk ? Colors.red[200]! : Colors.amber[200]!);
-    final riskLabel = isHighRisk ? 'HIGH RISK' : 'MEDIUM RISK';
+    final visuals = _RiskVisuals.fromLevel(result.riskLevel, isDark);
 
     return Container(
-      decoration: BoxDecoration(color: riskBgColor, borderRadius: BorderRadius.circular(14), border: Border.all(color: riskBorderColor, width: 1.5)),
+      decoration: BoxDecoration(
+        color: visuals.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: visuals.border, width: 1.5),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: riskColor.withValues(alpha: 0.15), shape: BoxShape.circle), child: Icon(Icons.security_rounded, color: riskColor, size: 18)),
-                const SizedBox(width: 10),
+                Icon(visuals.icon, color: visuals.color, size: 22),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Customs Compliance & Risk Warnings', style: TextStyle(color: riskColor, fontSize: 14, fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 2),
-                      Text('${result.complianceWarnings.length} alerts requiring attention', style: TextStyle(color: riskColor.withValues(alpha: 0.7), fontSize: 11)),
-                    ],
+                  child: Text(
+                    visuals.label,
+                    style: TextStyle(color: visuals.color, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5),
                   ),
                 ),
-                Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: riskColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6), border: Border.all(color: riskColor.withValues(alpha: 0.4), width: 1)), child: Text(riskLabel, style: TextStyle(color: riskColor, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.8))),
               ],
             ),
           ),
-          Container(height: 1, color: riskColor.withValues(alpha: 0.15)),
+          Container(height: 1, color: visuals.color.withValues(alpha: 0.15)),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
               children: result.complianceWarnings.asMap().entries.map((entry) => Padding(
-                padding: EdgeInsets.only(bottom: entry.key < result.complianceWarnings.length - 1 ? 10 : 0),
+                padding: EdgeInsets.only(bottom: entry.key < result.complianceWarnings.length - 1 ? 12 : 0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(margin: const EdgeInsets.only(top: 4), width: 6, height: 6, decoration: BoxDecoration(color: riskColor, shape: BoxShape.circle)),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(entry.value, style: TextStyle(color: riskColor.withValues(alpha: 0.9), fontSize: 13, height: 1.5, fontWeight: FontWeight.w500))),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Icon(Icons.circle, size: 6, color: visuals.color),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        entry.value, 
+                        style: TextStyle(
+                          color: isDark ? TariffColors.textPrimary : Colors.black87, 
+                          fontSize: 13, 
+                          height: 1.5, 
+                          fontWeight: FontWeight.w500
+                        )
+                      ),
+                    ),
                   ],
                 ),
               )).toList(),
@@ -428,10 +450,18 @@ class AuditResultScreen extends ConsumerWidget {
   }
 
   Widget _buildRequiredDocumentsCard(BuildContext context, HsAuditResultEntity result) {
-    const docAccent = Color(0xFF64B5F6);
+    if (result.requiredDocuments.isEmpty) return const SizedBox.shrink();
+
+    const docAccent = Color(0xFF1565C0);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
-      decoration: BoxDecoration(color: isDark ? TariffColors.navySurface : Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: docAccent.withValues(alpha: 0.4), width: 1.5), boxShadow: [BoxShadow(color: docAccent.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(
+        color: isDark ? TariffColors.navySurface : Colors.white, 
+        borderRadius: BorderRadius.circular(16), 
+        border: Border.all(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!, width: 1),
+        boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -439,7 +469,11 @@ class AuditResultScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
             child: Row(
               children: [
-                Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: docAccent.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.description_outlined, size: 20, color: docAccent)),
+                Container(
+                  padding: const EdgeInsets.all(8), 
+                  decoration: BoxDecoration(color: docAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)), 
+                  child: const Icon(Icons.description_outlined, size: 20, color: docAccent)
+                ),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,7 +486,7 @@ class AuditResultScreen extends ConsumerWidget {
               ],
             ),
           ),
-          Container(height: 1, color: docAccent.withValues(alpha: 0.15)),
+          Container(height: 1, color: isDark ? TariffColors.divider : Colors.grey[200]),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -460,9 +494,19 @@ class AuditResultScreen extends ConsumerWidget {
                 padding: EdgeInsets.only(bottom: entry.key < result.requiredDocuments.length - 1 ? 12 : 0),
                 child: Row(
                   children: [
-                    Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: docAccent.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.check_rounded, size: 14, color: docAccent)),
+                    const Icon(Icons.check_circle_outline_rounded, size: 16, color: TariffColors.greenVerified),
                     const SizedBox(width: 12),
-                    Expanded(child: Text(entry.value, style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 13, fontWeight: FontWeight.w500, height: 1.4))),
+                    Expanded(
+                      child: Text(
+                        entry.value, 
+                        style: TextStyle(
+                          color: isDark ? TariffColors.textPrimary : Colors.black87, 
+                          fontSize: 13, 
+                          fontWeight: FontWeight.w500, 
+                          height: 1.4
+                        )
+                      )
+                    ),
                   ],
                 ),
               )).toList(),
@@ -499,7 +543,7 @@ class AuditResultScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBottomBar(BuildContext context, HsAuditResultEntity result) {
+  Widget _buildBottomBar(BuildContext context, WidgetRef ref, HsAuditResultEntity result) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -511,117 +555,112 @@ class AuditResultScreen extends ConsumerWidget {
       child: Row(
         children: [
           Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () => PdfExportService.exportAuditReport(context, _toMap(result)), 
-              style: OutlinedButton.styleFrom(
-                foregroundColor: isDark ? TariffColors.textSecondary : Colors.blueGrey[700], 
-                side: BorderSide(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!, width: 1), 
-                padding: const EdgeInsets.symmetric(vertical: 14), 
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+            child: ElevatedButton.icon(
+              onPressed: () {
+                if (result is HsAuditResultModel) {
+                  ref.read(pdfExportServiceProvider).generateAndShareAuditPdf(result);
+                } else {
+                  // Fallback for immediate entity injection (convert to model)
+                  final model = HsAuditResultModel(
+                    hsCode: result.hsCode,
+                    userId: result.userId,
+                    hsDescription: result.hsDescription,
+                    chapter: result.chapter,
+                    consignee: result.consignee,
+                    invoiceNumber: result.invoiceNumber,
+                    cargoDescription: result.cargoDescription,
+                    standardDutyRate: result.standardDutyRate,
+                    vatRate: result.vatRate,
+                    totalTaxBurden: result.totalTaxBurden,
+                    declaredValue: result.declaredValue,
+                    currency: result.currency,
+                    estimatedDutyAmount: result.estimatedDutyAmount,
+                    confidenceScore: result.confidenceScore,
+                    complianceWarnings: result.complianceWarnings,
+                    requiredDocuments: result.requiredDocuments,
+                    auditTimestamp: result.auditTimestamp,
+                    riskLevel: result.riskLevel,
+                    status: result.status,
+                    originCountry: result.originCountry,
+                    destinationCountry: result.destinationCountry,
+                    totalWeightKg: result.totalWeightKg,
+                    plannedMonth: result.plannedMonth,
+                    shippingMethod: result.shippingMethod,
+                    isDeleted: result.isDeleted,
+                  );
+                  ref.read(pdfExportServiceProvider).generateAndShareAuditPdf(model);
+                }
+              }, 
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark ? TariffColors.navyElevated : const Color(0xFF1565C0),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16), 
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 2,
               ), 
-              icon: const Icon(Icons.print_outlined, size: 18), 
-              label: const Text('Export PDF', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))
+              icon: const Icon(Icons.picture_as_pdf_rounded, size: 20), 
+              label: const Text(
+                'EXPORT AUDIT REPORT (PDF)', 
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.0)
+              )
             )
           ),
-          /*
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    backgroundColor: isDark ? TariffColors.navyMid : Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: TariffColors.cardBorder)),
-                    title: Text(
-                      'Confirm Official Submission',
-                      style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontWeight: FontWeight.bold),
-                    ),
-                    content: Text(
-                      'You are about to transmit this cargo manifest to the National Customs Authority. This action will finalize the audit and lock the record.',
-                      style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 14),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: Text('CANCEL', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontWeight: FontWeight.w600)),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text('SUBMIT', style: TextStyle(color: TariffColors.greenVerified, fontWeight: FontWeight.w900)),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirm == true && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '✅ Manifest successfully filed with Customs Authority.',
-                        style: TextStyle(color: isDark ? TariffColors.navyDeep : Colors.white, fontWeight: FontWeight.w700),
-                      ),
-                      backgroundColor: TariffColors.greenVerified,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: TariffColors.greenVerified,
-                foregroundColor: isDark ? const Color(0xFF0A1628) : Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              icon: const Icon(Icons.cloud_upload_rounded, size: 18),
-              label: const Text(
-                'Submit to Customs',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ),
-          ),
-          */
         ],
       ),
     );
   }
+}
 
-  Map<String, dynamic> _toMap(HsAuditResultEntity e) {
-    return {
-      'hsCode': e.hsCode,
-      'userId': e.userId,
-      'hsDescription': e.hsDescription,
-      'chapter': e.chapter,
-      'consignee': e.consignee,
-      'invoiceNumber': e.invoiceNumber,
-      'cargoDescription': e.cargoDescription,
-      'standardDutyRate': e.standardDutyRate,
-      'vatRate': e.vatRate,
-      'totalTaxBurden': e.totalTaxBurden,
-      'declaredValue': e.declaredValue,
-      'currency': e.currency,
-      'estimatedDutyAmount': e.estimatedDutyAmount,
-      'confidenceScore': e.confidenceScore,
-      'complianceWarnings': e.complianceWarnings,
-      'requiredDocuments': e.requiredDocuments,
-      'auditTimestamp': e.auditTimestamp,
-      'riskLevel': e.riskLevel.name,
-      'originCountry': e.originCountry,
-      'destinationCountry': e.destinationCountry,
-      'totalWeightKg': e.totalWeightKg,
-      'plannedMonth': e.plannedMonth,
-      'shippingMethod': e.shippingMethod,
-      'isDeleted': e.isDeleted ? 1 : 0,
-    };
+class _RiskVisuals {
+  final Color color;
+  final Color background;
+  final Color border;
+  final IconData icon;
+  final String label;
+
+  const _RiskVisuals({
+    required this.color,
+    required this.background,
+    required this.border,
+    required this.icon,
+    required this.label,
+  });
+
+  factory _RiskVisuals.fromLevel(RiskLevel level, bool isDark) {
+    switch (level) {
+      case RiskLevel.low:
+        return _RiskVisuals(
+          color: TariffColors.greenVerified,
+          background: isDark ? const Color(0xFF0F2618) : const Color(0xFFE8F5E9),
+          border: isDark ? TariffColors.greenVerifiedBorder.withValues(alpha: 0.3) : const Color(0xFFA5D6A7),
+          icon: Icons.verified_user_rounded,
+          label: 'SECURE / LOW RISK',
+        );
+      case RiskLevel.medium:
+        return _RiskVisuals(
+          color: TariffColors.amberPending,
+          background: isDark ? const Color(0xFF261D00) : const Color(0xFFFFF8E1),
+          border: isDark ? TariffColors.amberPendingBorder.withValues(alpha: 0.3) : const Color(0xFFFFE082),
+          icon: Icons.assignment_late_rounded,
+          label: 'CAUTION / MEDIUM RISK',
+        );
+      case RiskLevel.high:
+        return _RiskVisuals(
+          color: TariffColors.crimsonRisk,
+          background: isDark ? const Color(0xFF260D0D) : const Color(0xFFFFEBEE),
+          border: isDark ? TariffColors.crimsonRiskBorder.withValues(alpha: 0.3) : const Color(0xFFEF9A9A),
+          icon: Icons.gpp_maybe_rounded,
+          label: 'ALERT / HIGH RISK',
+        );
+      case RiskLevel.invalidInput:
+        return _RiskVisuals(
+          color: isDark ? TariffColors.textSecondary : Colors.blueGrey[700]!,
+          background: isDark ? const Color(0xFF1C252E) : const Color(0xFFECEFF1),
+          border: isDark ? Colors.white10 : const Color(0xFFCFD8DC),
+          icon: Icons.block_rounded,
+          label: 'SECURITY BLOCK / INVALID INPUT',
+        );
+    }
   }
 }
 
@@ -634,6 +673,7 @@ class _TariffRow extends StatelessWidget {
   final bool isBold;
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         Padding(
@@ -642,13 +682,13 @@ class _TariffRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(flex: 2, child: Text(label, style: const TextStyle(color: TariffColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w400))),
+              Flexible(flex: 2, child: Text(label, style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.grey[600], fontSize: 13, fontWeight: FontWeight.w400))),
               const SizedBox(width: 12),
               Flexible(flex: 3, child: Text(value, textAlign: TextAlign.right, style: TextStyle(color: valueColor, fontSize: isBold ? 15 : 13, fontWeight: isBold ? FontWeight.w700 : FontWeight.w500, fontFamily: value.contains('%') || value.contains('USD') ? 'monospace' : null))),
             ],
           ),
         ),
-        if (showDivider) Container(height: 1, color: TariffColors.divider),
+        if (showDivider) Container(height: 1, color: isDark ? TariffColors.divider : Colors.grey[200]),
       ],
     );
   }
@@ -662,6 +702,7 @@ class _MetaRow extends StatelessWidget {
   final bool mono;
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         Padding(
@@ -669,13 +710,13 @@ class _MetaRow extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(child: Text(label, style: const TextStyle(color: TariffColors.textMuted, fontSize: 12), overflow: TextOverflow.ellipsis)),
+              Flexible(child: Text(label, style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[500], fontSize: 12), overflow: TextOverflow.ellipsis)),
               const SizedBox(width: 12),
-              Flexible(child: Text(value, textAlign: TextAlign.right, style: TextStyle(color: TariffColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500, fontFamily: mono ? 'monospace' : null), overflow: TextOverflow.ellipsis)),
+              Flexible(child: Text(value, textAlign: TextAlign.right, style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black87, fontSize: 12, fontWeight: FontWeight.w500, fontFamily: mono ? 'monospace' : null), overflow: TextOverflow.ellipsis)),
             ],
           ),
         ),
-        if (showDivider) Container(height: 1, color: TariffColors.divider),
+        if (showDivider) Container(height: 1, color: isDark ? TariffColors.divider : Colors.grey[200]),
       ],
     );
   }

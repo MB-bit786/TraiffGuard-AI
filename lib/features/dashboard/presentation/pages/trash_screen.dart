@@ -71,9 +71,9 @@ class TrashScreen extends ConsumerWidget {
         children: [
           Icon(Icons.delete_outline_rounded, size: 64, color: isDark ? TariffColors.textMuted.withValues(alpha: 0.5) : Colors.grey[300]),
           const SizedBox(height: 16),
-          Text('Your Trash Bin is empty', style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black54, fontSize: 17, fontWeight: FontWeight.w600)),
+          Text('Your Trash Bin is empty', style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 17, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
-          Text('Soft-deleted audits will appear here.', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[500], fontSize: 13)),
+          Text('Soft-deleted audits will appear here.', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 13)),
         ],
       ),
     );
@@ -139,11 +139,11 @@ class TrashScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: isDark ? TariffColors.navyMid : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!, width: 1)),
         title: Text('Erase Permanently?', style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontWeight: FontWeight.bold)),
         content: Text('This will hard-delete audit ${invoice.id} from local storage. This action cannot be undone.', style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 14)),
         actions: [
-          TextButton(onPressed: () => context.pop(), child: Text('CANCEL', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600]))),
+          TextButton(onPressed: () => context.pop(), child: Text('CANCEL', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontWeight: FontWeight.w600))),
           TextButton(
             onPressed: () async {
               context.pop();

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import '../../domain/entities/hs_audit_result_entity.dart';
+import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 
 class HsAuditResultModel extends HsAuditResultEntity {
   const HsAuditResultModel({
@@ -30,6 +30,7 @@ class HsAuditResultModel extends HsAuditResultEntity {
     super.isDeleted = false,
   });
 
+  /// Maps the object to a format suitable for local database persistence.
   Map<String, dynamic> toMap() {
     return {
       'hsCode': hsCode,
@@ -60,43 +61,96 @@ class HsAuditResultModel extends HsAuditResultEntity {
     };
   }
 
+  /// factory with defensive parsing to protect against malformed AI payloads or schema drift.
   factory HsAuditResultModel.fromMap(Map<String, dynamic> map) {
     return HsAuditResultModel(
-      hsCode: map['hsCode'] as String,
-      userId: map['userId'] as String? ?? 'anonymous',
-      hsDescription: map['hsDescription'] as String,
-      chapter: map['chapter'] as String,
-      consignee: map['consignee'] as String,
-      invoiceNumber: map['invoiceNumber'] as String,
-      cargoDescription: map['cargoDescription'] as String,
-      standardDutyRate: map['standardDutyRate'] as String,
-      vatRate: map['vatRate'] as String,
-      totalTaxBurden: map['totalTaxBurden'] as String,
-      declaredValue: map['declaredValue'] as String,
-      currency: map['currency'] as String,
-      estimatedDutyAmount: map['estimatedDutyAmount'] as String,
-      confidenceScore: map['confidenceScore'] as int,
-      complianceWarnings: List<String>.from(json.decode(map['complianceWarnings'] as String)),
-      requiredDocuments: List<String>.from(json.decode(map['requiredDocuments'] as String)),
-      auditTimestamp: map['auditTimestamp'] as String,
-      riskLevel: parseRiskLevel(map['riskLevel'] as String),
-      status: map['status'] as String? ?? 'synced',
-      originCountry: map['originCountry'] as String? ?? 'IN',
-      destinationCountry: map['destinationCountry'] as String? ?? 'US',
-      totalWeightKg: map['totalWeightKg'] as String? ?? '0',
-      plannedMonth: map['plannedMonth'] as String? ?? 'January',
-      shippingMethod: map['shippingMethod'] as String? ?? 'Sea Freight',
-      isDeleted: (map['isDeleted'] as int? ?? 0) == 1,
+      hsCode: _asString(map['hsCode']),
+      userId: _asString(map['userId'], 'anonymous'),
+      hsDescription: _asString(map['hsDescription']),
+      chapter: _asString(map['chapter']),
+      consignee: _asString(map['consignee']),
+      invoiceNumber: _asString(map['invoiceNumber']),
+      cargoDescription: _asString(map['cargoDescription']),
+      standardDutyRate: _asString(map['standardDutyRate']),
+      vatRate: _asString(map['vatRate']),
+      totalTaxBurden: _asString(map['totalTaxBurden']),
+      declaredValue: _asString(map['declaredValue'], '0.0'),
+      currency: _asString(map['currency']),
+      estimatedDutyAmount: _asString(map['estimatedDutyAmount']),
+      confidenceScore: _asInt(map['confidenceScore'], 100), // Default high confidence for manually verified/trusted data
+      complianceWarnings: _asStringList(map['complianceWarnings']),
+      requiredDocuments: _asStringList(map['requiredDocuments']),
+      auditTimestamp: _asString(map['auditTimestamp']),
+      riskLevel: parseRiskLevel(map['riskLevel']),
+      status: _asString(map['status'], 'synced'),
+      originCountry: _asString(map['originCountry'], 'IN'),
+      destinationCountry: _asString(map['destinationCountry'], 'US'),
+      totalWeightKg: _asString(map['totalWeightKg'], '0'),
+      plannedMonth: _asString(map['plannedMonth'], 'January'),
+      shippingMethod: _asString(map['shippingMethod'], 'Sea Freight'),
+      isDeleted: _asBoolFromInt(map['isDeleted']),
     );
   }
 
-  static RiskLevel parseRiskLevel(String value) {
-    final lowerValue = value.toLowerCase().replaceAll('_', '');
-    if (lowerValue == 'invalidinput') return RiskLevel.invalidInput;
+  // --- PRIVATE DEFENSIVE PARSING HELPERS ---
+
+  static String _asString(dynamic value, [String defaultValue = '']) {
+    if (value == null) return defaultValue;
+    return value.toString().trim();
+  }
+
+  static int _asInt(dynamic value, [int defaultValue = 0]) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      return int.tryParse(value) ?? double.tryParse(value)?.toInt() ?? defaultValue;
+    }
+    return defaultValue;
+  }
+
+  static List<String> _asStringList(dynamic value) {
+    if (value == null) return [];
+    
+    // 1. Handle JSON encoded string (common in SQFlite)
+    if (value is String && value.startsWith('[')) {
+      try {
+        final decoded = json.decode(value);
+        if (decoded is List) return decoded.map((e) => e.toString()).toList();
+      } catch (_) {
+        // Fall through to comma split if JSON fails
+      }
+    }
+
+    // 2. Handle comma-separated string (LLM inaccuracy fallback)
+    if (value is String) {
+      if (value.isEmpty) return [];
+      return value.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+
+    // 3. Handle actual List
+    if (value is List) {
+      return value.map((e) => e.toString()).toList();
+    }
+
+    return [value.toString()];
+  }
+
+  static RiskLevel parseRiskLevel(dynamic value) {
+    final String val = _asString(value, 'low').toLowerCase().replaceAll('_', '');
+    if (val == 'invalidinput') return RiskLevel.invalidInput;
+    
     return RiskLevel.values.firstWhere(
-      (e) => e.name.toLowerCase() == lowerValue,
-      orElse: () => RiskLevel.medium,
+      (e) => e.name.toLowerCase() == val,
+      orElse: () => RiskLevel.low, // Default to LOW as per requirement
     );
+  }
+
+  static bool _asBoolFromInt(dynamic value) {
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
+    return false;
   }
 
   HsAuditResultModel copyWith({

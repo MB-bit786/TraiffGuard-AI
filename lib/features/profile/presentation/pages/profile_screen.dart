@@ -31,18 +31,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
 
   Future<void> _handleSignOut() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: TariffColors.navyMid,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Sign Out', style: TextStyle(color: TariffColors.textPrimary)),
-        content: const Text('Are you sure you want to terminate the current session?',
-            style: TextStyle(color: TariffColors.textSecondary)),
+        backgroundColor: isDark ? TariffColors.navyMid : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!),
+        ),
+        title: Text('Sign Out', style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to terminate the current session?',
+            style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54)),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
-            child: const Text('CANCEL', style: TextStyle(color: TariffColors.textMuted)),
+            child: Text('CANCEL', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600])),
           ),
           TextButton(
             onPressed: () => context.pop(true),
@@ -219,7 +223,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
-                          side: const BorderSide(color: TariffColors.crimsonRisk, width: 1.5),
+                          side: BorderSide(color: isDark ? TariffColors.crimsonRisk : TariffColors.crimsonRisk.withValues(alpha: 0.5), width: 1.5),
                         ),
                       ),
                       icon: const Icon(Icons.logout_rounded),
@@ -279,7 +283,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isDark ? TariffColors.navyDeep.withValues(alpha: 0.5) : Colors.blue[50],
+                  color: isDark ? TariffColors.navyDeep.withValues(alpha: 0.5) : const Color(0xFFE3F2FD),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: isDark ? TariffColors.amberPending : const Color(0xFF1565C0), size: 20),
@@ -324,7 +328,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isDark ? TariffColors.navyDeep.withValues(alpha: 0.5) : Colors.blue[50],
+              color: isDark ? TariffColors.navyDeep.withValues(alpha: 0.5) : const Color(0xFFE3F2FD),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: isDark ? TariffColors.textSecondary : Colors.blueGrey, size: 20),

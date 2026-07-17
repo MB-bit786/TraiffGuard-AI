@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../audit/data/models/hs_audit_result_model.dart';
+import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
 
 abstract class InvoiceRemoteDataSource {
   Future<void> syncAuditResult(HsAuditResultModel result);

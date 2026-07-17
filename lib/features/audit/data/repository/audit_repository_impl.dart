@@ -1,4 +1,4 @@
-import '../../domain/entities/hs_audit_result_entity.dart';
+import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 import '../../domain/repository/audit_repository.dart';
 import '../../../invoice/data/data_sources/invoice_local_data_source.dart';
 

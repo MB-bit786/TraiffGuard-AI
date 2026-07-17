@@ -286,13 +286,14 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   }
 
   Widget _buildOfflineBanner() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: TariffColors.amberPendingSoft,
+        color: isDark ? TariffColors.amberPendingSoft : const Color(0xFFFFF8E1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: TariffColors.amberPendingBorder.withValues(alpha: 0.6),
+          color: isDark ? TariffColors.amberPendingBorder.withValues(alpha: 0.6) : Colors.amber[200]!,
           width: 1.5,
         ),
       ),
@@ -329,7 +330,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                 Text(
                   'Data will be safely cached locally in the warehouse vault. All entries will auto-sync when connectivity is restored.',
                   style: TextStyle(
-                    color: TariffColors.amberPending.withValues(alpha: 0.8),
+                    color: isDark ? TariffColors.amberPending.withValues(alpha: 0.8) : Colors.amber[800],
                     fontSize: 12,
                     height: 1.5,
                   ),
@@ -724,6 +725,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
     }
 
     final searchResultAsync = ref.watch(tariffSearchProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return searchResultAsync.maybeWhen(
       data: (results) {
@@ -732,15 +734,15 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           margin: const EdgeInsets.only(top: 8),
           constraints: const BoxConstraints(maxHeight: 200),
           decoration: BoxDecoration(
-            color: TariffColors.navySurface,
+            color: isDark ? TariffColors.navySurface : Colors.white,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: TariffColors.inputBorder),
+            border: Border.all(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!),
           ),
           child: ListView.separated(
             shrinkWrap: true,
             padding: const EdgeInsets.symmetric(vertical: 4),
             itemCount: results.length,
-            separatorBuilder: (_, _) => const Divider(color: TariffColors.divider, height: 1),
+            separatorBuilder: (_, _) => Divider(color: isDark ? TariffColors.divider : Colors.grey[200], height: 1),
             itemBuilder: (context, index) {
               final item = results[index];
               return Material(
@@ -755,7 +757,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                     item['description'] ?? '',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: TariffColors.textSecondary, fontSize: 12),
+                    style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 12),
                   ),
                   onTap: () {
                     setState(() {

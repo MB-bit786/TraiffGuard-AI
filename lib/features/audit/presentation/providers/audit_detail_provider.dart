@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/hs_audit_result_entity.dart';
+import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 import '../../domain/repository/audit_repository.dart';
 import '../../data/repository/audit_repository_impl.dart';
 import '../../domain/usecases/get_audit_detail_use_case.dart';

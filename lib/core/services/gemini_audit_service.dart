@@ -1,46 +1,70 @@
+import 'dart:convert';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Principal AI Systems Service for high-fidelity structured customs audit extraction.
-/// Implements advanced "Node-Hopping" and exponential backoff to handle 503 capacity surges.
+/// Implements persistent node-hopping and environment-secured credentials.
 class GeminiAuditService {
-  late GenerativeModel _model;
-  final String _effectiveKey;
-  
+  final GenerativeModel _primaryNode;
+  final GenerativeModel _fallbackNode;
+  bool _useFallback = false;
+
   // High-performance model targets
-  static const String _primaryModel = 'gemini-3.5-flash';
-  static const String _fallbackModel = 'gemini-2.5-flash'; // High-availability stable node
+  static const String _primaryModelName = 'gemini-3.5-flash';
+  static const String _fallbackModelName = 'gemini-2.5-flash';
 
-  GeminiAuditService() : _effectiveKey = _resolveApiKey() {
-    _initModel(_primaryModel);
-  }
+  GeminiAuditService()
+      : _primaryNode = _createModel(_primaryModelName),
+        _fallbackNode = _createModel(_fallbackModelName);
 
-  void _initModel(String modelName) {
-    debugPrint('[GEMINI] Initializing node: $modelName');
-    _model = GenerativeModel(
+  /// Resolved active model reference based on current node health status.
+  GenerativeModel get _activeModel => _useFallback ? _fallbackNode : _primaryNode;
+
+  static GenerativeModel _createModel(String modelName) {
+    final apiKey = _resolveApiKey();
+    return GenerativeModel(
       model: modelName,
-      apiKey: _effectiveKey,
+      apiKey: apiKey,
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
       ),
     );
   }
 
+  /// Secure API Key resolution.
+  /// Throws a StateError if the environment variable is missing to prevent runtime crashes.
   static String _resolveApiKey() {
-    String key = const String.fromEnvironment('GEMINI_API_KEY');
+    const key = String.fromEnvironment('GEMINI_API_KEY');
     if (key.isEmpty) {
-      // Verified fallback token for production stability
-      key = 'AQ.Ab8RN6L-atHsMcTQqXNQnrR7YhP0X3CuHIKFGZsyfMMoSZ0XYA';
-      debugPrint('[GEMINI] Using hardcoded fallback API key.');
-    } else {
-      debugPrint('[GEMINI] Using environment-injected API key.');
+      throw StateError(
+        'CRITICAL: GEMINI_API_KEY environment variable is not defined.\n'
+        'Please run the application with: --dart-define=GEMINI_API_KEY=your_key_here\n'
+        'or use --dart-define-from-file=secrets.json',
+      );
     }
     return key;
   }
 
+  /// Strips Markdown code blocks and cleans the AI response for JSON parsing.
+  String _cleanJsonResponse(String rawResponse) {
+    String cleaned = rawResponse.trim();
+    // Strip leading ```json or ```
+    if (cleaned.startsWith('```')) {
+      final lines = cleaned.split('\n');
+      if (lines.first.startsWith('```')) {
+        lines.removeAt(0);
+      }
+      if (lines.isNotEmpty && lines.last.startsWith('```')) {
+        lines.removeLast();
+      }
+      cleaned = lines.join('\n').trim();
+    }
+    return cleaned;
+  }
+
   /// Orchestrates a high-fidelity AI Audit with integrated fault tolerance.
-  /// Automatically switches nodes (Node-Hopping) after multiple 503 failures.
+  /// Node-Hopping occurs after multiple capacity failures without object recreation.
   Future<String> fetchAiCustomsAudit({
     required String cargoDescription,
     required String hsCode,
@@ -102,20 +126,29 @@ class GeminiAuditService {
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        final response = await _model.generateContent([Content.text(prompt)]);
-        final text = response.text;
+        final response = await _activeModel.generateContent([Content.text(prompt)]);
+        final rawText = response.text;
 
-        if (text == null) {
+        if (rawText == null) {
           throw Exception('AI returned empty response.');
         }
 
-        return text;
+        final cleanedText = _cleanJsonResponse(rawText);
+
+        // Integrity Check: Verify JSON structure before returning
+        try {
+          jsonDecode(cleanedText);
+        } catch (e) {
+          throw Exception('AI response failed integrity check: Invalid JSON structure.');
+        }
+
+        return cleanedText;
       } catch (e) {
         final errorStr = e.toString().toLowerCase();
         debugPrint('[GEMINI] Attempt $attempt failed: $e');
 
         if (attempt == maxAttempts) {
-          debugPrint('[GEMINI] All nodes exhausted. Falling back to Track B...');
+          debugPrint('[GEMINI] All nodes exhausted.');
           rethrow;
         }
 
@@ -127,9 +160,9 @@ class GeminiAuditService {
 
         if (isRetryable) {
           // Node-Hopping: Switch to the high-availability node after 2 failures
-          if (attempt == 2) {
-            debugPrint('[GEMINI] Node Congestion Detected. Hopping to node: $_fallbackModel');
-            _initModel(_fallbackModel);
+          if (attempt == 2 && !_useFallback) {
+            debugPrint('[GEMINI] Node Congestion. Hopping to High-Availability node: $_fallbackModelName');
+            _useFallback = true;
           }
           debugPrint('[GEMINI] Server busy, retrying attempt ${attempt + 1}...');
         } else {

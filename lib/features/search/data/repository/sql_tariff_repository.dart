@@ -14,12 +14,12 @@ class SqlTariffRepository implements TariffRepository {
       return await db.query('static_hs_codes', limit: 50);
     }
 
-    // 1. Check if the query is a direct HS Code prefix
-    if (RegExp(r'^\d+$').hasMatch(trimmedQuery)) {
+    // 1. Check if the query is a direct HS Code prefix (Allows numbers and dots)
+    if (RegExp(r'^[0-9.]+$').hasMatch(trimmedQuery)) {
       return await db.query(
         'static_hs_codes',
         where: 'hs_code LIKE ?',
-        whereArgs: ['$trimmedQuery%'],
+        whereArgs: ['${trimmedQuery.replaceAll('.', '')}%'],
         limit: 50,
       );
     }
@@ -39,37 +39,45 @@ class SqlTariffRepository implements TariffRepository {
     
     final List<String> scoreParts = [];
     final List<String> whereParts = [];
-    final List<String> args = [];
+    final List<String> scoreArgs = [];
+    final List<String> whereArgs = [];
 
-    // Full phrase match components
+    // 1. Direct HS Code Scoring (Highest Priority)
+    scoreParts.add("(CASE WHEN hs_code LIKE ? THEN 20 ELSE 0 END)");
+    scoreArgs.add('$trimmedQuery%');
+    
+    // 2. Full phrase match on description
     scoreParts.add("(CASE WHEN description LIKE ? THEN 10 ELSE 0 END)");
-    args.add('%$trimmedQuery%');
+    scoreArgs.add('%$trimmedQuery%');
     
     scoreParts.add("(CASE WHEN description LIKE ? THEN 5 ELSE 0 END)");
-    args.add('$trimmedQuery%');
-    
-    whereParts.add("description LIKE ?");
-    args.add('%$trimmedQuery%');
+    scoreArgs.add('$trimmedQuery%');
 
-    // Individual word components
+    // 3. Tokenized Search (Scoring AND Filtering)
     for (var word in words) {
+      // Score token matches on both columns
       scoreParts.add("(CASE WHEN description LIKE ? THEN 1 ELSE 0 END)");
-      args.add('%$word%');
+      scoreArgs.add('%$word%');
+      scoreParts.add("(CASE WHEN hs_code LIKE ? THEN 5 ELSE 0 END)");
+      scoreArgs.add('%$word%');
       
-      whereParts.add("description LIKE ?");
-      args.add('%$word%');
+      // Filter requirement: word must exist in EITHER description OR hs_code
+      whereParts.add("(description LIKE ? OR hs_code LIKE ?)");
+      whereArgs.add('%$word%');
+      whereArgs.add('%$word%');
     }
 
     final String scoreExpression = scoreParts.join(' + ');
-    final String whereClause = whereParts.join(' OR ');
+    final String whereClause = whereParts.join(' AND ');
 
-    // We use a rawQuery to handle the calculated 'relevance' column
+    final List<String> allArgs = [...scoreArgs, ...whereArgs];
+
     return await db.rawQuery('''
       SELECT *, ($scoreExpression) as relevance
       FROM static_hs_codes
       WHERE $whereClause
       ORDER BY relevance DESC, hs_code ASC
       LIMIT 50
-    ''', args);
+    ''', allArgs);
   }
 }

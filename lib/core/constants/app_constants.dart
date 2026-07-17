@@ -14,4 +14,12 @@ class AppConstants {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
   static const List<String> shippingMethods = ['Air Freight', 'Sea Freight'];
+
+  static const List<String> mainCountries = [
+    'China', 'United States', 'India', 'Germany', 'Japan', 
+    'Vietnam', 'Mexico', 'United Kingdom', 'France', 'Canada', 
+    'Netherlands', 'Singapore', 'Italy', 'South Korea', 'Brazil'
+  ];
+
+  static final RegExp invoiceNumberRegex = RegExp(r'^[A-Z0-9-]{3,20}$');
 }

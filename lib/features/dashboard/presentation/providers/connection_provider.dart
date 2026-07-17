@@ -94,6 +94,10 @@ class ConnectionNotifier extends StateNotifier<AppConnectionState> {
     state = state.copyWith(manualOnlineStatus: value);
   }
 
+  void updateManualOverride({required bool isManual, required bool status}) {
+    state = state.copyWith(isManualOverride: isManual, manualOnlineStatus: status);
+  }
+
   @override
   void dispose() {
     _subscription?.cancel();

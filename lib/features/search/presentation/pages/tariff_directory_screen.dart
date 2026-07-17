@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/features/search/presentation/providers/tariff_search_provider.dart';
@@ -243,15 +244,44 @@ class _TariffDirectoryScreenState extends ConsumerState<TariffDirectoryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        hsCode,
-                        style: TextStyle(
-                          color: isDark ? TariffColors.textPrimary : Colors.black87,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 17,
-                          fontFamily: 'monospace',
-                          letterSpacing: 1.0,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            hsCode,
+                            style: TextStyle(
+                              color: isDark ? TariffColors.textPrimary : Colors.black87,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 17,
+                              fontFamily: 'monospace',
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              Clipboard.setData(ClipboardData(text: hsCode));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('HS Code copied'),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: isDark ? TariffColors.navyElevated : Colors.grey[100],
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                Icons.copy_rounded,
+                                size: 14,
+                                color: isDark ? TariffColors.textSecondary : Colors.blueGrey,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 6),
                       _buildHighlightedText(description, _currentQuery),

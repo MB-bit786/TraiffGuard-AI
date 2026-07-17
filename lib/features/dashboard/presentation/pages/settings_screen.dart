@@ -156,17 +156,16 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildConnectionOverride(BuildContext context, WidgetRef ref, AppConnectionState state) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isForcedOffline = state.isManualOverride && !state.manualOnlineStatus;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark 
-            ? TariffColors.navySurface 
-            : Colors.grey[200],
+        color: isDark ? TariffColors.navySurface : Colors.grey[200],
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).brightness == Brightness.dark 
-              ? TariffColors.cardBorder 
-              : Colors.grey[300]!,
+          color: isDark ? TariffColors.cardBorder : Colors.grey[300]!,
         ),
       ),
       child: Column(
@@ -174,28 +173,20 @@ class SettingsScreen extends ConsumerWidget {
           Material(
             color: Colors.transparent,
             child: SwitchListTile(
-              title: const Text('Manual Override', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text('Ignore system network detection'),
-              value: state.isManualOverride,
+              title: const Text('Force Offline Mode', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(isForcedOffline 
+                  ? 'Override active: OFFLINE' 
+                  : 'Automatic (Following system)'),
+              value: isForcedOffline,
               activeTrackColor: TariffColors.amberPending,
-              onChanged: (val) => ref.read(connectionProvider.notifier).toggleManualOverride(val),
+              onChanged: (val) {
+                ref.read(connectionProvider.notifier).updateManualOverride(
+                  isManual: val, 
+                  status: !val // If forced, status is false (Offline). If not, status is true (Online/Auto)
+                );
+              },
             ),
           ),
-          if (state.isManualOverride) ...[
-            const Divider(height: 1, indent: 16),
-            Material(
-              color: Colors.transparent,
-              child: ListTile(
-                title: const Text('Manual Status', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(state.manualOnlineStatus ? 'Force Online' : 'Force Offline'),
-                trailing: Switch(
-                  value: state.manualOnlineStatus,
-                  activeTrackColor: TariffColors.greenVerified,
-                  onChanged: (val) => ref.read(connectionProvider.notifier).setManualStatus(val),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );

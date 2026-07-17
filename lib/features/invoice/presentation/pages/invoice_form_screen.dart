@@ -20,8 +20,6 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   final _consigneeController = TextEditingController();
   final _invoiceNumberController = TextEditingController();
   final _cargoDescController = TextEditingController();
-  final _originCountryController = TextEditingController();
-  final _destCountryController = TextEditingController();
   final _valueController = TextEditingController();
   final _weightController = TextEditingController();
 
@@ -29,27 +27,32 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   String? _selectedHsCode;
   String _selectedMonth = 'January';
   String _selectedShippingMethod = 'Sea Freight';
-
-
-
-
+  String _selectedOriginCountry = 'China';
+  String _selectedDestCountry = 'United States';
 
   @override
   void initState() {
     super.initState();
-    _cargoDescController.addListener(() {
-      setState(() {});
+    _cargoDescController.addListener(_onCargoDescChanged);
+  }
+
+  void _onCargoDescChanged() {
+    final isOnline = ref.read(connectionProvider).effectivelyOnline;
+    if (!isOnline) {
       ref.read(tariffSearchProvider.notifier).updateQuery(_cargoDescController.text);
-    });
+    } else {
+      // Search disabled in online mode as per user request
+      ref.read(tariffSearchProvider.notifier).updateQuery('');
+    }
+    setState(() {});
   }
 
   @override
   void dispose() {
+    _cargoDescController.removeListener(_onCargoDescChanged);
     _consigneeController.dispose();
     _invoiceNumberController.dispose();
     _cargoDescController.dispose();
-    _originCountryController.dispose();
-    _destCountryController.dispose();
     _valueController.dispose();
     _weightController.dispose();
     super.dispose();
@@ -85,8 +88,8 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           invoiceNumber: _invoiceNumberController.text,
           consignee: _consigneeController.text,
           cargoDescription: _cargoDescController.text,
-          originCountry: _originCountryController.text,
-          destCountry: _destCountryController.text,
+          originCountry: _selectedOriginCountry,
+          destCountry: _selectedDestCountry,
           declaredValue: double.tryParse(_valueController.text) ?? 0.0,
           currency: _selectedCurrency,
           hsCode: _selectedHsCode,
@@ -232,38 +235,38 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
             label: 'Invoice Number',
             hint: 'e.g. INV-2024-00341',
             icon: Icons.tag_rounded,
-            validator: (v) => (v == null || v.trim().isEmpty)
-                ? 'Invoice number required'
-                : null,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Invoice number required';
+              if (!AppConstants.invoiceNumberRegex.hasMatch(v.trim())) {
+                return 'Invalid format (Alpha-numeric \u0026 dashes only)';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
-                child: _buildTextField(
-                  controller: _originCountryController,
+                child: _buildDropdown(
                   label: 'Origin Country',
-                  hint: 'e.g. CN, US',
-                  icon: Icons.location_on_outlined,
-                  inputType: TextInputType.text,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  initialValue: _selectedOriginCountry,
+                  items: AppConstants.mainCountries,
+                  onChanged: (v) => setState(() => _selectedOriginCountry = v!),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildTextField(
-                  controller: _destCountryController,
+                child: _buildDropdown(
                   label: 'Importing Country',
-                  hint: 'e.g. IN, US',
-                  icon: Icons.flag_rounded,
-                  inputType: TextInputType.text,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  initialValue: _selectedDestCountry,
+                  items: AppConstants.mainCountries,
+                  onChanged: (v) => setState(() => _selectedDestCountry = v!),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          _buildSectionLabel('CARGO & VALUATION'),
+          _buildSectionLabel('CARGO \u0026 VALUATION'),
           const SizedBox(height: 12),
           _buildCargoDescriptionField(),
           _buildTariffSearchResults(),
@@ -318,7 +321,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '⚠️ Running in Offline Mode',
+                  '\u26A0\ufe0F Running in Offline Mode',
                   style: TextStyle(
                     color: TariffColors.amberPending,
                     fontSize: 13,
@@ -451,9 +454,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
         labelText: 'Cargo Description',
         alignLabelWithHint: true,
         hintText:
-            'e.g. Rechargeable lithium-ion battery packs, 3.7V, 5Ah capacity, for use in electric vehicles...',
+            '[Prompt] e.g. lithium-ion battery packs, 3.7V, 5Ah capacity, for use in electric vehicles...',
         helperText:
-            '💡 Describe the cargo in plain words to allow AI classification. Be specific — include material, composition, end-use, and voltage ratings if applicable.',
+            '\ud83d\udca1 Describe the cargo in plain words to allow AI classification. Be specific \u2014 include material, composition, end-use, and voltage ratings if applicable.',
         helperMaxLines: 3,
         hintMaxLines: 4,
         prefixIcon: Padding(
@@ -623,6 +626,8 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
     ];
     final selected = <String>{};
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return StatefulBuilder(
       builder: (context, localSet) {
         return Wrap(
@@ -640,15 +645,18 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                     horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? TariffColors.amberPendingSoft
-                      : TariffColors.navySurface,
+                      ? (isDark ? TariffColors.amberPendingSoft : Colors.amber[100])
+                      : (isDark ? TariffColors.navySurface : Colors.white),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: isSelected
                         ? TariffColors.amberPendingBorder
-                        : TariffColors.inputBorder,
+                        : (isDark ? TariffColors.inputBorder : Colors.grey[300]!),
                     width: 1,
                   ),
+                  boxShadow: (!isDark && !isSelected) 
+                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))] 
+                      : null,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -658,7 +666,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                       size: 14,
                       color: isSelected
                           ? TariffColors.amberPending
-                          : TariffColors.textMuted,
+                          : (isDark ? TariffColors.textMuted : Colors.grey[500]),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -666,7 +674,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                       style: TextStyle(
                         color: isSelected
                             ? TariffColors.amberPending
-                            : TariffColors.textSecondary,
+                            : (isDark ? TariffColors.textSecondary : Colors.black87),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -708,7 +716,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
               )
             : const Icon(Icons.bolt_rounded, size: 24),
         label: Text(
-          isAnalyzing ? 'Analyzing Cargo...' : '⚡ Run AI Customs Audit',
+          isAnalyzing ? 'Analyzing Cargo...' : '\u26A1 Run AI Customs Audit',
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w800,
@@ -720,7 +728,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   }
 
   Widget _buildTariffSearchResults() {
-    if (_cargoDescController.text.trim().isEmpty) {
+    final connection = ref.watch(connectionProvider);
+    // CRITICAL: Search feature is strictly restricted to Offline Mode as per user request
+    if (connection.effectivelyOnline || _cargoDescController.text.trim().isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -737,6 +747,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
             color: isDark ? TariffColors.navySurface : Colors.white,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!),
+            boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]
           ),
           child: ListView.separated(
             shrinkWrap: true,
@@ -745,24 +756,28 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
             separatorBuilder: (_, _) => Divider(color: isDark ? TariffColors.divider : Colors.grey[200], height: 1),
             itemBuilder: (context, index) {
               final item = results[index];
+              final hsCode = item['hs_code'] ?? '';
+              final description = item['description'] ?? '';
+
               return Material(
                 color: Colors.transparent,
                 child: ListTile(
                   dense: true,
                   title: Text(
-                    item['hs_code'] ?? '',
-                    style: const TextStyle(color: TariffColors.amberPending, fontWeight: FontWeight.bold, fontSize: 13),
+                    hsCode,
+                    style: TextStyle(
+                      color: TariffColors.amberPending, 
+                      fontWeight: FontWeight.w900, 
+                      fontSize: 14,
+                      fontFamily: 'monospace',
+                      letterSpacing: 0.5
+                    ),
                   ),
-                  subtitle: Text(
-                    item['description'] ?? '',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 12),
-                  ),
+                  subtitle: _buildHighlightedText(description, _cargoDescController.text),
                   onTap: () {
                     setState(() {
-                      _selectedHsCode = item['hs_code'];
-                      _cargoDescController.text = item['description'] ?? '';
+                      _selectedHsCode = hsCode;
+                      _cargoDescController.text = description;
                     });
                     ref.read(tariffSearchProvider.notifier).updateQuery('');
                   },
@@ -791,7 +806,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
         ),
         SizedBox(width: 5),
         Text(
-          'AES-256 encrypted · Stored in local vault · Tamper-evident',
+          'AES-256 encrypted \u00b7 Stored in local vault \u00b7 Tamper-evident',
           style: TextStyle(
             color: TariffColors.textMuted,
             fontSize: 11,
@@ -800,6 +815,53 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           textAlign: TextAlign.center,
         ),
       ],
+    );
+  }
+
+  Widget _buildHighlightedText(String text, String query) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    if (query.isEmpty || !text.toLowerCase().contains(query.toLowerCase())) {
+      return Text(
+        text,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 13, height: 1.4),
+      );
+    }
+
+    final List<TextSpan> spans = [];
+    final String lowerText = text.toLowerCase();
+    final String lowerQuery = query.toLowerCase();
+    int start = 0;
+    int indexOfMatch;
+
+    while ((indexOfMatch = lowerText.indexOf(lowerQuery, start)) != -1) {
+      if (indexOfMatch > start) {
+        spans.add(TextSpan(text: text.substring(start, indexOfMatch)));
+      }
+      spans.add(TextSpan(
+        text: text.substring(indexOfMatch, indexOfMatch + query.length),
+        style: TextStyle(
+          color: TariffColors.amberPending,
+          fontWeight: FontWeight.bold,
+          backgroundColor: TariffColors.amberPending.withValues(alpha: 0.15),
+        ),
+      ));
+      start = indexOfMatch + query.length;
+    }
+
+    if (start < text.length) {
+      spans.add(TextSpan(text: text.substring(start)));
+    }
+
+    return RichText(
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      text: TextSpan(
+        style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 13, height: 1.4, fontFamily: 'Roboto'),
+        children: spans,
+      ),
     );
   }
 }

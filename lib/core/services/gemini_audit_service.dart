@@ -31,7 +31,7 @@ class GeminiAuditService {
     String key = const String.fromEnvironment('GEMINI_API_KEY');
     if (key.isEmpty) {
       // Verified fallback token for production stability
-      key = 'AQ.Ab8RN6KOdv89ZrJUmTT45p6Zdm0EC9CMTjT2B6zSKobNvsKkuQ';
+      key = 'AQ.Ab8RN6L-atHsMcTQqXNQnrR7YhP0X3CuHIKFGZsyfMMoSZ0XYA';
       debugPrint('[GEMINI] Using hardcoded fallback API key.');
     } else {
       debugPrint('[GEMINI] Using environment-injected API key.');

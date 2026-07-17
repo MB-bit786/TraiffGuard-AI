@@ -587,23 +587,25 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
     required List<String> items,
     required void Function(String?) onChanged,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return DropdownButtonFormField<String>(
       initialValue: initialValue,
-      dropdownColor: TariffColors.navyMid,
-      style: const TextStyle(color: TariffColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+      dropdownColor: isDark ? TariffColors.navyMid : Colors.white,
+      style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 14, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: TariffColors.textSecondary, fontSize: 13),
+        labelStyle: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.grey[700], fontSize: 13),
         filled: true,
-        fillColor: TariffColors.navySurface,
+        fillColor: isDark ? TariffColors.navySurface : Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: TariffColors.inputBorder, width: 1),
+          borderSide: BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: TariffColors.inputBorder, width: 1),
+          borderSide: BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1),
         ),
       ),
       items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),

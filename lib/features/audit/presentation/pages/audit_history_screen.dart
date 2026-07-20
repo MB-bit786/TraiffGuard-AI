@@ -19,6 +19,15 @@ class _AuditHistoryScreenState extends ConsumerState<AuditHistoryScreen> {
   String _searchQuery = '';
 
   @override
+  void initState() {
+    super.initState();
+    // Reactive: ensure data is synced from cloud when entering history
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(invoiceListProvider.notifier).syncWithCloud();
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();

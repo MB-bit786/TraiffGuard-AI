@@ -29,6 +29,10 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   String _selectedShippingMethod = 'Sea Freight';
   String _selectedOriginCountry = 'China';
   String _selectedDestCountry = 'United States';
+  bool _isOtherOrigin = false;
+  bool _isOtherDest = false;
+  final _otherOriginController = TextEditingController();
+  final _otherDestController = TextEditingController();
 
   @override
   void initState() {
@@ -55,6 +59,8 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
     _cargoDescController.dispose();
     _valueController.dispose();
     _weightController.dispose();
+    _otherOriginController.dispose();
+    _otherDestController.dispose();
     super.dispose();
   }
 
@@ -88,8 +94,8 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           invoiceNumber: _invoiceNumberController.text,
           consignee: _consigneeController.text,
           cargoDescription: _cargoDescController.text,
-          originCountry: _selectedOriginCountry,
-          destCountry: _selectedDestCountry,
+          originCountry: _isOtherOrigin ? _otherOriginController.text.trim() : _selectedOriginCountry,
+          destCountry: _isOtherDest ? _otherDestController.text.trim() : _selectedDestCountry,
           declaredValue: double.tryParse(_valueController.text) ?? 0.0,
           currency: _selectedCurrency,
           hsCode: _selectedHsCode,
@@ -233,7 +239,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           _buildTextField(
             controller: _invoiceNumberController,
             label: 'Invoice Number',
-            hint: 'e.g. INV-2024-00341',
+            hint: 'e.g. INV-2026-3000',
             icon: Icons.tag_rounded,
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Invoice number required';
@@ -250,8 +256,11 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                 child: _buildDropdown(
                   label: 'Origin Country',
                   initialValue: _selectedOriginCountry,
-                  items: AppConstants.mainCountries,
-                  onChanged: (v) => setState(() => _selectedOriginCountry = v!),
+                  items: [...AppConstants.mainCountries, 'Other...'],
+                  onChanged: (v) => setState(() {
+                    _selectedOriginCountry = v!;
+                    _isOtherOrigin = v == 'Other...';
+                  }),
                 ),
               ),
               const SizedBox(width: 12),
@@ -259,12 +268,42 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                 child: _buildDropdown(
                   label: 'Importing Country',
                   initialValue: _selectedDestCountry,
-                  items: AppConstants.mainCountries,
-                  onChanged: (v) => setState(() => _selectedDestCountry = v!),
+                  items: [...AppConstants.mainCountries, 'Other...'],
+                  onChanged: (v) => setState(() {
+                    _selectedDestCountry = v!;
+                    _isOtherDest = v == 'Other...';
+                  }),
                 ),
               ),
             ],
           ),
+          if (_isOtherOrigin || _isOtherDest) const SizedBox(height: 14),
+          if (_isOtherOrigin || _isOtherDest)
+            Row(
+              children: [
+                if (_isOtherOrigin)
+                  Expanded(
+                    child: _buildTextField(
+                      controller: _otherOriginController,
+                      label: 'Type Origin',
+                      hint: 'Enter country',
+                      icon: Icons.edit_location_alt_outlined,
+                      validator: (v) => (_isOtherOrigin && (v == null || v.trim().isEmpty)) ? 'Required' : null,
+                    ),
+                  ),
+                if (_isOtherOrigin && _isOtherDest) const SizedBox(width: 12),
+                if (_isOtherDest)
+                  Expanded(
+                    child: _buildTextField(
+                      controller: _otherDestController,
+                      label: 'Type Importing',
+                      hint: 'Enter country',
+                      icon: Icons.edit_location_alt_outlined,
+                      validator: (v) => (_isOtherDest && (v == null || v.trim().isEmpty)) ? 'Required' : null,
+                    ),
+                  ),
+              ],
+            ),
           const SizedBox(height: 24),
           _buildSectionLabel('CARGO \u0026 VALUATION'),
           const SizedBox(height: 12),

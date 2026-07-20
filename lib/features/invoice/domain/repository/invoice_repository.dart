@@ -5,6 +5,8 @@ abstract class InvoiceRepository {
   Future<void> cacheInvoiceManifest(InvoiceEntity invoice, {HsAuditResultEntity? auditResult});
   
   Future<List<InvoiceEntity>> getAllInvoices(String userId);
+
+  Stream<List<InvoiceEntity>> watchInvoices(String userId);
   
   Future<List<HsAuditResultEntity>> getPendingDraftResults(String userId);
   
@@ -19,4 +21,7 @@ abstract class InvoiceRepository {
   Future<HsAuditResultEntity?> getAuditResultByInvoiceId(String id, String userId);
   
   Future<List<Map<String, dynamic>>> searchTariffMaster(String query);
+
+  /// Manually triggers a broadcast of the invoice list for the given user.
+  void notifyChanges(String userId);
 }

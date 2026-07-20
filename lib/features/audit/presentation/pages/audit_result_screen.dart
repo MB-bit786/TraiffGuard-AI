@@ -181,7 +181,9 @@ class AuditResultScreen extends ConsumerWidget {
               }
             }
           },
-          icon: const Icon(Icons.more_vert_rounded, color: TariffColors.textSecondary, size: 20),
+          icon: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 20),
+          color: isDark ? TariffColors.navyMid : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: isDark ? const BorderSide(color: TariffColors.cardBorder) : BorderSide(color: Colors.grey[200]!)),
           itemBuilder: (context) => [
             const PopupMenuItem(
               value: 'delete',

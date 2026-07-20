@@ -79,6 +79,12 @@ class TariffGuardApp extends ConsumerWidget {
           titleTextStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18),
           contentTextStyle: const TextStyle(color: Colors.black54, fontSize: 14),
         ),
+        popupMenuTheme: PopupMenuThemeData(
+          color: Colors.white,
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+        ),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
@@ -112,6 +118,12 @@ class TariffGuardApp extends ConsumerWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: TariffColors.cardBorder)),
           titleTextStyle: const TextStyle(color: TariffColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
           contentTextStyle: const TextStyle(color: TariffColors.textSecondary, fontSize: 14),
+        ),
+        popupMenuTheme: PopupMenuThemeData(
+          color: TariffColors.navyMid,
+          elevation: 8,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: TariffColors.cardBorder)),
+          textStyle: const TextStyle(color: TariffColors.textPrimary, fontWeight: FontWeight.w600),
         ),
       ),
       routerConfig: router,

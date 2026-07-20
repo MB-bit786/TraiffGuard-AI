@@ -6,6 +6,7 @@ import 'package:hscode_auditor/features/audit/presentation/providers/audit_detai
 import 'package:hscode_auditor/core/providers/auto_sync_provider.dart';
 import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
+import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
 import '../../../dashboard/presentation/providers/invoice_list_provider.dart';
 import '../../../invoice/presentation/providers/invoice_providers.dart';
 import '../../../invoice/domain/entities/invoice_entity.dart';
@@ -34,6 +35,12 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
   String? _selectedHsCode;
   late String _selectedMonth;
   late String _selectedShippingMethod;
+  late String _selectedOriginCountry;
+  late String _selectedDestCountry;
+  bool _isOtherOrigin = false;
+  bool _isOtherDest = false;
+  final _otherOriginController = TextEditingController();
+  final _otherDestController = TextEditingController();
   bool _isSaving = false;
 
   @override
@@ -52,12 +59,36 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
     _selectedMonth = widget.audit.plannedMonth;
     _selectedShippingMethod = widget.audit.shippingMethod;
 
+    // Initialize dropdown vs manual text state
+    if (AppConstants.mainCountries.contains(widget.audit.originCountry)) {
+      _selectedOriginCountry = widget.audit.originCountry;
+      _isOtherOrigin = false;
+    } else {
+      _selectedOriginCountry = 'Other...';
+      _isOtherOrigin = true;
+      _otherOriginController.text = widget.audit.originCountry;
+    }
+
+    if (AppConstants.mainCountries.contains(widget.audit.destinationCountry)) {
+      _selectedDestCountry = widget.audit.destinationCountry;
+      _isOtherDest = false;
+    } else {
+      _selectedDestCountry = 'Other...';
+      _isOtherDest = true;
+      _otherDestController.text = widget.audit.destinationCountry;
+    }
+
     _cargoDescController.addListener(_onCargoDescChanged);
   }
 
   void _onCargoDescChanged() {
-    if (mounted) setState(() {});
-    ref.read(tariffSearchProvider.notifier).updateQuery(_cargoDescController.text);
+    final isOnline = ref.read(connectionProvider).effectivelyOnline;
+    if (!isOnline) {
+      ref.read(tariffSearchProvider.notifier).updateQuery(_cargoDescController.text);
+    } else {
+      ref.read(tariffSearchProvider.notifier).updateQuery('');
+    }
+    setState(() {});
   }
 
   @override
@@ -70,6 +101,8 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
     _destCountryController.dispose();
     _valueController.dispose();
     _weightController.dispose();
+    _otherOriginController.dispose();
+    _otherDestController.dispose();
     super.dispose();
   }
 
@@ -126,8 +159,8 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
         riskLevel: widget.audit.riskLevel,
         status: 'offlineDraft',
         auditTimestamp: timestamp,
-        originCountry: _originCountryController.text.trim(),
-        destinationCountry: _destCountryController.text.trim(),
+        originCountry: _isOtherOrigin ? _otherOriginController.text.trim() : _selectedOriginCountry,
+        destinationCountry: _isOtherDest ? _otherDestController.text.trim() : _selectedDestCountry,
         totalWeightKg: _weightController.text.trim(),
         plannedMonth: _selectedMonth,
         shippingMethod: _selectedShippingMethod,
@@ -243,15 +276,74 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
             const SizedBox(height: 12),
             _buildTextField(controller: _consigneeController, label: 'Consignee Name', hint: 'e.g. Global Logistics Inc.', icon: Icons.business_rounded),
             const SizedBox(height: 14),
-            _buildTextField(controller: _invoiceNumberController, label: 'Invoice Number', hint: 'e.g. INV-2024-001', icon: Icons.tag_rounded),
+            _buildTextField(
+              controller: _invoiceNumberController, 
+              label: 'Invoice Number', 
+              hint: 'e.g. INV-2024-001', 
+              icon: Icons.tag_rounded,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Invoice number required';
+                if (!AppConstants.invoiceNumberRegex.hasMatch(v.trim())) {
+                  return 'Invalid format (Alpha-numeric & dashes only)';
+                }
+                return null;
+              },
+            ),
             const SizedBox(height: 14),
             Row(
               children: [
-                Expanded(child: _buildTextField(controller: _originCountryController, label: 'Origin Country', hint: 'CN, US', icon: Icons.location_on_outlined)),
+                Expanded(
+                  child: _buildDropdown(
+                    label: 'Origin Port',
+                    initialValue: _selectedOriginCountry,
+                    items: [...AppConstants.mainCountries, 'Other...'],
+                    onChanged: (v) => setState(() {
+                      _selectedOriginCountry = v!;
+                      _isOtherOrigin = v == 'Other...';
+                    }),
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: _buildTextField(controller: _destCountryController, label: 'Importing Country', hint: 'IN, US', icon: Icons.flag_rounded)),
+                Expanded(
+                  child: _buildDropdown(
+                    label: 'Importing Port',
+                    initialValue: _selectedDestCountry,
+                    items: [...AppConstants.mainCountries, 'Other...'],
+                    onChanged: (v) => setState(() {
+                      _selectedDestCountry = v!;
+                      _isOtherDest = v == 'Other...';
+                    }),
+                  ),
+                ),
               ],
             ),
+            if (_isOtherOrigin || _isOtherDest) const SizedBox(height: 14),
+            if (_isOtherOrigin || _isOtherDest)
+              Row(
+                children: [
+                  if (_isOtherOrigin)
+                    Expanded(
+                      child: _buildTextField(
+                        controller: _otherOriginController,
+                        label: 'Type Origin',
+                        hint: 'Enter country',
+                        icon: Icons.edit_location_alt_outlined,
+                        validator: (v) => (_isOtherOrigin && (v == null || v.trim().isEmpty)) ? 'Required' : null,
+                      ),
+                    ),
+                  if (_isOtherOrigin && _isOtherDest) const SizedBox(width: 12),
+                  if (_isOtherDest)
+                    Expanded(
+                      child: _buildTextField(
+                        controller: _otherDestController,
+                        label: 'Type Importing',
+                        hint: 'Enter country',
+                        icon: Icons.edit_location_alt_outlined,
+                        validator: (v) => (_isOtherDest && (v == null || v.trim().isEmpty)) ? 'Required' : null,
+                      ),
+                    ),
+                ],
+              ),
             const SizedBox(height: 24),
             _buildSectionLabel('CARGO & VALUATION'),
             const SizedBox(height: 12),
@@ -296,12 +388,14 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
     required String hint,
     required IconData icon,
     TextInputType inputType = TextInputType.text,
+    String? Function(String?)? validator,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return TextFormField(
       controller: controller,
       keyboardType: inputType,
+      validator: validator,
       style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 14, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
@@ -315,7 +409,6 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: TariffColors.amberPending, width: 2)),
       ),
-      validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
     );
   }
 
@@ -429,7 +522,12 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
   }
 
   Widget _buildTariffSearchResults() {
-    if (_cargoDescController.text.trim().isEmpty) return const SizedBox.shrink();
+    final connection = ref.watch(connectionProvider);
+    // Search panel strictly restricted to Offline Mode as per user request
+    if (connection.effectivelyOnline || _cargoDescController.text.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     final searchResultAsync = ref.watch(tariffSearchProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -443,6 +541,7 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
             color: isDark ? TariffColors.navySurface : Colors.white,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!),
+            boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]
           ),
           child: ListView.separated(
             shrinkWrap: true,
@@ -451,17 +550,32 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
             separatorBuilder: (_, _) => Divider(color: isDark ? TariffColors.divider : Colors.grey[200], height: 1),
             itemBuilder: (context, index) {
               final item = results[index];
-              return ListTile(
-                dense: true,
-                title: Text(item['hs_code'] ?? '', style: const TextStyle(color: TariffColors.amberPending, fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text(item['description'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 12)),
-                onTap: () {
-                  setState(() {
-                    _selectedHsCode = item['hs_code'];
-                    _cargoDescController.text = item['description'] ?? '';
-                  });
-                  ref.read(tariffSearchProvider.notifier).updateQuery('');
-                },
+              final hsCode = item['hs_code'] ?? '';
+              final description = item['description'] ?? '';
+
+              return Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  dense: true,
+                  title: Text(
+                    hsCode,
+                    style: TextStyle(
+                      color: TariffColors.amberPending, 
+                      fontWeight: FontWeight.w900, 
+                      fontSize: 14,
+                      fontFamily: 'monospace',
+                      letterSpacing: 0.5
+                    ),
+                  ),
+                  subtitle: _buildHighlightedText(description, _cargoDescController.text),
+                  onTap: () {
+                    setState(() {
+                      _selectedHsCode = hsCode;
+                      _cargoDescController.text = description;
+                    });
+                    ref.read(tariffSearchProvider.notifier).updateQuery('');
+                  },
+                ),
               );
             },
           ),
@@ -469,6 +583,53 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
       },
       loading: () => const Padding(padding: EdgeInsets.symmetric(vertical: 10), child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: TariffColors.amberPending)))),
       orElse: () => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildHighlightedText(String text, String query) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    if (query.isEmpty || !text.toLowerCase().contains(query.toLowerCase())) {
+      return Text(
+        text,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 13, height: 1.4),
+      );
+    }
+
+    final List<TextSpan> spans = [];
+    final String lowerText = text.toLowerCase();
+    final String lowerQuery = query.toLowerCase();
+    int start = 0;
+    int indexOfMatch;
+
+    while ((indexOfMatch = lowerText.indexOf(lowerQuery, start)) != -1) {
+      if (indexOfMatch > start) {
+        spans.add(TextSpan(text: text.substring(start, indexOfMatch)));
+      }
+      spans.add(TextSpan(
+        text: text.substring(indexOfMatch, indexOfMatch + query.length),
+        style: TextStyle(
+          color: TariffColors.amberPending,
+          fontWeight: FontWeight.bold,
+          backgroundColor: TariffColors.amberPending.withValues(alpha: 0.15),
+        ),
+      ));
+      start = indexOfMatch + query.length;
+    }
+
+    if (start < text.length) {
+      spans.add(TextSpan(text: text.substring(start)));
+    }
+
+    return RichText(
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      text: TextSpan(
+        style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 13, height: 1.4, fontFamily: 'Roboto'),
+        children: spans,
+      ),
     );
   }
 

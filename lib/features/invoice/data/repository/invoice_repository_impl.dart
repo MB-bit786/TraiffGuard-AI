@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../../domain/entities/invoice_entity.dart';
 import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 import '../../domain/repository/invoice_repository.dart';
@@ -12,11 +13,26 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
   final InvoiceRemoteDataSource remoteDataSource;
   final SqlDatabaseService dbService;
 
+  // Reactive stream to broadcast invoice list updates
+  final _invoiceStreamController = StreamController<List<InvoiceEntity>>.broadcast();
+
   InvoiceRepositoryImpl({
     required this.localDataSource,
     required this.remoteDataSource,
     required this.dbService,
   });
+
+  @override
+  Stream<List<InvoiceEntity>> watchInvoices(String userId) {
+    // Trigger initial fetch when a new listener joins
+    _refreshInvoices(userId);
+    return _invoiceStreamController.stream;
+  }
+
+  Future<void> _refreshInvoices(String userId) async {
+    final invoices = await localDataSource.getAllInvoices(userId);
+    _invoiceStreamController.add(invoices);
+  }
 
   @override
   Future<void> cacheInvoiceManifest(InvoiceEntity invoice, {HsAuditResultEntity? auditResult}) async {
@@ -31,6 +47,8 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
         await remoteDataSource.syncAuditResult(resultModel);
       }
     }
+    // Broadcast change
+    _refreshInvoices(invoice.userId);
   }
 
   @override
@@ -51,6 +69,9 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
     await localDataSource.cacheInvoice(manifestModel);
     await localDataSource.cacheAuditResult(resultModel);
     await remoteDataSource.syncAuditResult(resultModel);
+
+    // Broadcast change
+    _refreshInvoices(manifest.userId);
   }
 
   @override
@@ -63,6 +84,9 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
     await localDataSource.updateInvoiceDeletedStatus(id, userId, delete);
     await localDataSource.updateAuditDeletedStatus(id, userId, delete);
     await remoteDataSource.updateDeletedStatus(id, userId, delete);
+
+    // Broadcast change
+    _refreshInvoices(userId);
   }
 
   @override
@@ -70,6 +94,9 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
     await localDataSource.hardDeleteInvoice(id, userId);
     await localDataSource.hardDeleteAudit(id, userId);
     await remoteDataSource.permanentlyDelete(id, userId);
+
+    // Broadcast change
+    _refreshInvoices(userId);
   }
 
   @override
@@ -85,6 +112,11 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
     String whereClause = words.map((_) => 'description LIKE ?').join(' AND ');
     List<String> args = words.map((word) => '%$word%').toList();
     return await db.query('static_hs_codes', where: whereClause, whereArgs: args, limit: 50);
+  }
+
+  @override
+  void notifyChanges(String userId) {
+    _refreshInvoices(userId);
   }
 
   HsAuditResultModel _toModel(HsAuditResultEntity e) {

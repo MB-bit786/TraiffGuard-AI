@@ -6,12 +6,13 @@ import 'app_routes.dart';
 
 // Import all screens
 import 'package:hscode_auditor/features/auth/presentation/pages/auth_screen.dart';
-import 'package:hscode_auditor/features/dashboard/presentation/pages/main_layout_screen.dart';
+import 'package:hscode_auditor/features/dashboard/presentation/pages/dashboard_screen.dart';
 import 'package:hscode_auditor/features/invoice/presentation/pages/invoice_form_screen.dart';
 import 'package:hscode_auditor/features/audit/presentation/pages/audit_result_screen.dart';
 import 'package:hscode_auditor/features/audit/presentation/pages/audit_history_screen.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/pages/trash_screen.dart';
 import 'package:hscode_auditor/features/audit/presentation/pages/edit_audit_screen.dart';
+import 'package:hscode_auditor/features/profile/presentation/pages/profile_screen.dart';
 import 'package:hscode_auditor/features/profile/presentation/pages/terms_conditions_screen.dart';
 import 'package:hscode_auditor/features/auth/presentation/pages/custom_splash_screen.dart';
 import 'package:hscode_auditor/features/search/presentation/pages/tariff_directory_screen.dart';
@@ -104,10 +105,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               final termsAcceptedAsync = ref.watch(userAcceptedTermsProvider(user.uid));
               return termsAcceptedAsync.when(
                 data: (hasAccepted) => hasAccepted 
-                    ? const MainLayoutScreen() 
+                    ? const DashboardScreen() 
                     : const TermsConditionsScreen(isGatekeeperMode: true),
-                loading: () => _buildRouterLoadingScaffold(),
-                error: (e, _) => _buildRouterErrorScaffold('Compliance Error: $e'),
+                loading: () => _buildRouterLoadingScaffold(context),
+                error: (e, _) => _buildRouterErrorScaffold(context, 'Compliance Error: $e'),
               );
             },
           );
@@ -138,9 +139,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               return auditAsync.when(
                 data: (audit) => audit != null 
                     ? EditAuditScreen(audit: audit as HsAuditResultModel)
-                    : _buildRouterErrorScaffold('Audit record $id not found.'),
-                loading: () => _buildRouterLoadingScaffold(),
-                error: (e, _) => _buildRouterErrorScaffold('Fetch failed: $e'),
+                    : _buildRouterErrorScaffold(context, 'Audit record $id not found.'),
+                loading: () => _buildRouterLoadingScaffold(context),
+                error: (e, _) => _buildRouterErrorScaffold(context, 'Fetch failed: $e'),
               );
             },
           );
@@ -149,6 +150,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.trash,
         builder: (context, state) => const TrashScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.profile,
+        builder: (context, state) => const ProfileScreen(),
       ),
       GoRoute(
         path: AppRoutes.terms,
@@ -166,23 +171,28 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-Widget _buildRouterLoadingScaffold() {
-  return const Scaffold(
-    backgroundColor: Color(0xFF0A1628), // navyDeep
-    body: Center(child: CircularProgressIndicator(color: Color(0xFFFFB300))), // amberPending
+Widget _buildRouterLoadingScaffold(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    body: const Center(child: CircularProgressIndicator(color: Color(0xFFFFB300))), // amberPending
   );
 }
 
-Widget _buildRouterErrorScaffold(String message) {
+Widget _buildRouterErrorScaffold(BuildContext context, String message) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
   return Scaffold(
-    backgroundColor: const Color(0xFF0A1628),
+    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
     body: Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.error_outline_rounded, color: Color(0xFFE53935), size: 48), // crimsonRisk
           const SizedBox(height: 16),
-          Text(message, style: const TextStyle(color: Colors.white, fontSize: 14)),
+          Text(
+            message, 
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     ),

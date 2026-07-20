@@ -10,6 +10,7 @@ class AppRoutes {
   static const String auditHistory = '/audit-history';
   static const String editAudit = '/edit-audit/:id';
   static const String trash = '/trash';
+  static const String profile = '/profile';
   static const String terms = '/terms';
   static const String tariffDirectory = '/tariff-directory';
   static const String settings = '/settings';

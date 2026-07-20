@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
@@ -17,13 +18,26 @@ class InvoiceListNotifier extends StateNotifier<AsyncValue<List<InvoiceEntity>>>
   final InvoiceUseCases _invoiceUseCases;
   final AutoSyncService _syncService;
   final String _userId;
+  StreamSubscription? _invoiceSubscription;
 
   InvoiceListNotifier(this._invoiceUseCases, this._syncService, this._userId) : super(const AsyncValue.loading()) {
-    fetchInvoices();
+    _init();
+  }
+
+  void _init() {
+    state = const AsyncValue.loading();
+    // Listen to the reactive repository stream
+    _invoiceSubscription = _invoiceUseCases.repository.watchInvoices(_userId).listen(
+      (invoices) {
+        state = AsyncValue.data(invoices);
+      },
+      onError: (err, st) {
+        state = AsyncValue.error(err, st);
+      },
+    );
   }
 
   Future<void> fetchInvoices() async {
-    state = const AsyncValue.loading();
     try {
       final invoices = await _invoiceUseCases.getInvoices(_userId);
       state = AsyncValue.data(invoices);
@@ -55,5 +69,11 @@ class InvoiceListNotifier extends StateNotifier<AsyncValue<List<InvoiceEntity>>>
         state = AsyncValue.error(e, st);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _invoiceSubscription?.cancel();
+    super.dispose();
   }
 }

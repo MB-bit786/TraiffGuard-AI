@@ -53,8 +53,11 @@ class _CustomSplashScreenState extends State<CustomSplashScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: TariffColors.navyDeep,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: AnimatedBuilder(
           animation: _controller,
@@ -69,11 +72,11 @@ class _CustomSplashScreenState extends State<CustomSplashScreen> with SingleTick
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: TariffColors.amberPending.withValues(alpha: 0.05),
+                        color: TariffColors.amberPending.withValues(alpha: isDark ? 0.05 : 0.1),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: TariffColors.amberPending.withValues(alpha: 0.1),
+                            color: TariffColors.amberPending.withValues(alpha: isDark ? 0.1 : 0.05),
                             blurRadius: 40,
                             spreadRadius: 10,
                           )
@@ -87,10 +90,10 @@ class _CustomSplashScreenState extends State<CustomSplashScreen> with SingleTick
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       'TARIFFGUARD AI',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: isDark ? Colors.white : const Color(0xFF1565C0),
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 4.0,
@@ -100,7 +103,7 @@ class _CustomSplashScreenState extends State<CustomSplashScreen> with SingleTick
                     Text(
                       'INTELLIGENCE & COMPLIANCE',
                       style: TextStyle(
-                        color: TariffColors.textMuted,
+                        color: isDark ? TariffColors.textMuted : Colors.grey[600],
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 2.0,

@@ -53,7 +53,19 @@ class ConnectionNotifier extends StateNotifier<AppConnectionState> {
 
     _subscription = Connectivity().onConnectivityChanged.listen((results) {
       final bool nowOnline = _checkOnline(results);
-      state = state.copyWith(isOnline: nowOnline);
+      
+      // Smart Reset: If the device loses its network interface, 
+      // we clear the manual override to prevent "Stuck" toggle states.
+      bool nextManualOverride = state.isManualOverride;
+      if (!nowOnline) {
+        nextManualOverride = false;
+      }
+
+      state = state.copyWith(
+        isOnline: nowOnline,
+        isManualOverride: nextManualOverride,
+      );
+
       if (nowOnline) {
         _performHandshake();
       } else {
@@ -76,9 +88,27 @@ class ConnectionNotifier extends StateNotifier<AppConnectionState> {
     try {
       final lookup = await InternetAddress.lookup('google.com').timeout(const Duration(seconds: 3));
       final bool success = lookup.isNotEmpty && lookup[0].rawAddress.isNotEmpty;
-      if (mounted) state = state.copyWith(hasHandshake: success);
+      
+      if (mounted) {
+        // If internet handshake fails (no real-world traffic), 
+        // we clear the manual override so the UI correctly reflects the system state.
+        bool nextManualOverride = state.isManualOverride;
+        if (!success) {
+          nextManualOverride = false;
+        }
+
+        state = state.copyWith(
+          hasHandshake: success,
+          isManualOverride: nextManualOverride,
+        );
+      }
     } catch (_) {
-      if (mounted) state = state.copyWith(hasHandshake: false);
+      if (mounted) {
+        state = state.copyWith(
+          hasHandshake: false,
+          isManualOverride: false, // Reset to automatic mode on failure
+        );
+      }
     }
   }
 

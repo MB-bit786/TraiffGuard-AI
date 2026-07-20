@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/core/providers/theme_provider.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
+import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hscode_auditor/config/routes/app_routes.dart';
 import 'package:go_router/go_router.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -52,10 +54,40 @@ class SettingsScreen extends ConsumerWidget {
           _buildThemeSelector(context, ref, themeMode),
           
           const SizedBox(height: 32),
+
+          _buildSectionHeader(context, 'ACCOUNT'),
+          const SizedBox(height: 12),
+          _buildClickableCard(
+            context,
+            'Operator Profile',
+            'View your identity and system telemetry',
+            Icons.person_outline_rounded,
+            onTap: () => context.push(AppRoutes.profile),
+          ),
+          
+          const SizedBox(height: 32),
           
           _buildSectionHeader(context, 'NETWORK MODE'),
           const SizedBox(height: 12),
           _buildConnectionOverride(context, ref, connectionState),
+          
+          const SizedBox(height: 32),
+
+          _buildSectionHeader(context, 'LEGAL \u0026 COMPLIANCE'),
+          const SizedBox(height: 12),
+          _buildClickableCard(
+            context,
+            'Platform Terms of Service',
+            'Review legal protocols and disclaimers',
+            Icons.gavel_rounded,
+            onTap: () => context.push(AppRoutes.terms),
+          ),
+
+          const SizedBox(height: 32),
+
+          _buildSectionHeader(context, 'ACCOUNT SESSION'),
+          const SizedBox(height: 12),
+          _buildSignOutCard(context, ref),
           
           const SizedBox(height: 32),
           
@@ -63,6 +95,135 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           _buildAboutInfo(context),
         ],
+      ),
+    );
+  }
+
+  Future<void> _handleSignOut(BuildContext context, WidgetRef ref) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? TariffColors.navyMid : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!),
+        ),
+        title: Text('Sign Out', style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to terminate the current session?',
+            style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('CANCEL', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600])),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('SIGN OUT',
+                style: TextStyle(color: TariffColors.crimsonRisk, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ref.read(authUseCasesProvider).signOut();
+    }
+  }
+
+  Widget _buildClickableCard(BuildContext context, String title, String subtitle, IconData icon, {required VoidCallback onTap}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? TariffColors.navySurface : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!, width: 1),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isDark ? TariffColors.navyDeep.withValues(alpha: 0.5) : const Color(0xFFE3F2FD),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: isDark ? TariffColors.amberPending : const Color(0xFF1565C0), size: 20),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 13, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 11, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios_rounded, color: isDark ? TariffColors.textMuted : Colors.grey[400], size: 14),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignOutCard(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? TariffColors.navySurface : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!, width: 1),
+      ),
+      child: InkWell(
+        onTap: () => _handleSignOut(context, ref),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: TariffColors.crimsonRisk.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.logout_rounded, color: TariffColors.crimsonRisk, size: 20),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Terminate Session',
+                      style: TextStyle(color: TariffColors.crimsonRisk, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Log out of your current operator account',
+                      style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 11, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -157,32 +318,38 @@ class SettingsScreen extends ConsumerWidget {
 
   Widget _buildConnectionOverride(BuildContext context, WidgetRef ref, AppConnectionState state) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isForcedOffline = state.isManualOverride && !state.manualOnlineStatus;
+    final isSystemOffline = !state.isOnline || !state.hasHandshake;
+    final isManualActive = state.isManualOverride;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: isDark ? TariffColors.navySurface : Colors.grey[200],
+        color: isDark ? TariffColors.navySurface : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark ? TariffColors.cardBorder : Colors.grey[300]!,
         ),
+        boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]
       ),
       child: Column(
         children: [
           Material(
             color: Colors.transparent,
             child: SwitchListTile(
-              title: const Text('Force Offline Mode', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(isForcedOffline 
-                  ? 'Override active: OFFLINE' 
-                  : 'Automatic (Following system)'),
-              value: isForcedOffline,
+              title: const Text('Manual Status', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(isSystemOffline 
+                  ? 'Device is disconnected. Manual control disabled.'
+                  : (isManualActive 
+                      ? 'MANUAL: App is forced to stay OFFLINE.' 
+                      : 'AUTOMATIC: App follows system network.')),
+              value: isManualActive,
               activeTrackColor: TariffColors.amberPending,
-              onChanged: (val) {
+              onChanged: isSystemOffline ? null : (val) {
+                // When toggled ON, we set isManual=true and status=false (Force Offline)
+                // When toggled OFF, we set isManual=false (Back to Auto)
                 ref.read(connectionProvider.notifier).updateManualOverride(
                   isManual: val, 
-                  status: !val // If forced, status is false (Offline). If not, status is true (Online/Auto)
+                  status: false 
                 );
               },
             ),

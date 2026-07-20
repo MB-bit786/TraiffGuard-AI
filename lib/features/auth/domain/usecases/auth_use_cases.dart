@@ -8,6 +8,7 @@ import '../../../../core/constants/db_constants.dart';
 import '../../../../core/services/sql_database_service.dart';
 import '../../../dashboard/presentation/providers/connection_provider.dart';
 import '../repository/auth_repository.dart';
+import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
 
 /// Unified Authentication Engine
 /// Consolidates domain use cases and technical service logic (Sync/Hydration) into a single pipeline.
@@ -127,6 +128,13 @@ class AuthUseCases {
         }
       });
       debugPrint('[AUTH] Hydration complete: ${snapshot.docs.length} records restored.');
+      
+      // Notify the reactive repository about the changes
+      try {
+        _ref.read(inv.invoiceRepositoryProvider).notifyChanges(currentUid);
+      } catch (e) {
+        debugPrint('[AUTH] Failed to notify repository: $e');
+      }
     } catch (e) {
       debugPrint('[AUTH] Hydration bypassed or failed: $e');
     }

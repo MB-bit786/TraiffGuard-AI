@@ -3,12 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
-import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/dashboard_stats_provider.dart';
 import 'package:hscode_auditor/core/constants/app_constants.dart';
-import 'package:go_router/go_router.dart';
-import 'package:hscode_auditor/config/routes/app_routes.dart';
 
 /// Premium UI Engineer: Corporate Profile & Account Security.
 /// Displays authenticated user metadata and historical sync telemetry.
@@ -29,39 +26,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
-
-  Future<void> _handleSignOut() async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDark ? TariffColors.navyMid : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!),
-        ),
-        title: Text('Sign Out', style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to terminate the current session?',
-            style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54)),
-        actions: [
-          TextButton(
-            onPressed: () => context.pop(false),
-            child: Text('CANCEL', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600])),
-          ),
-          TextButton(
-            onPressed: () => context.pop(true),
-            child: const Text('SIGN OUT',
-                style: TextStyle(color: TariffColors.crimsonRisk, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await ref.read(authUseCasesProvider).signOut();
-      // The AuthGatekeeper in main.dart handles the primary swap automatically.
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -197,43 +161,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Icons.analytics_outlined,
                   ),
                   
-                  const SizedBox(height: 32),
-
-                  _buildSectionLabel(context, 'LEGAL & COMPLIANCE'),
-                  const SizedBox(height: 16),
-                  _buildClickableCard(
-                    context,
-                    'Platform Terms of Service',
-                    'Review legal protocols and disclaimers',
-                    Icons.gavel_rounded,
-                    onTap: () => context.push(AppRoutes.terms),
-                  ),
-                  
                   const SizedBox(height: 48),
 
-                  // 3. ACTION FOOTER
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton.icon(
-                      onPressed: _handleSignOut,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: TariffColors.crimsonRisk.withValues(alpha: 0.1),
-                        foregroundColor: TariffColors.crimsonRisk,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: isDark ? TariffColors.crimsonRisk : TariffColors.crimsonRisk.withValues(alpha: 0.5), width: 1.5),
-                        ),
-                      ),
-                      icon: const Icon(Icons.logout_rounded),
-                      label: const Text(
-                        'TERMINATE SESSION',
-                        style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
                   Center(
                     child: Text(
                       '${AppConstants.appName} Enterprise ${AppConstants.appVersion}\nSecure Operator Protocol Active',
@@ -260,55 +189,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         fontSize: 10,
         fontWeight: FontWeight.w800,
         letterSpacing: 1.5,
-      ),
-    );
-  }
-
-  Widget _buildClickableCard(BuildContext context, String title, String subtitle, IconData icon, {required VoidCallback onTap}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? TariffColors.navySurface : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!, width: 1),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isDark ? TariffColors.navyDeep.withValues(alpha: 0.5) : const Color(0xFFE3F2FD),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: isDark ? TariffColors.amberPending : const Color(0xFF1565C0), size: 20),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 13, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 11, fontWeight: FontWeight.w500),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios_rounded, color: isDark ? TariffColors.textMuted : Colors.grey[400], size: 14),
-            ],
-          ),
-        ),
       ),
     );
   }

@@ -274,17 +274,23 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
           children: [
             _buildSectionLabel('CONSIGNEE DETAILS'),
             const SizedBox(height: 12),
-            _buildTextField(controller: _consigneeController, label: 'Consignee Name', hint: 'e.g. Global Logistics Inc.', icon: Icons.business_rounded),
+            _buildTextField(
+              controller: _consigneeController, 
+              label: 'Consignee Name', 
+              hint: 'e.g. Global Logistics Inc.', 
+              icon: Icons.business_rounded,
+              validator: (v) => (v == null || v.trim().isEmpty) ? 'Consignee name is required' : null,
+            ),
             const SizedBox(height: 14),
             _buildTextField(
               controller: _invoiceNumberController, 
               label: 'Invoice Number', 
-              hint: 'e.g. INV-2024-001', 
+              hint: 'e.g. INV-2026-3000', 
               icon: Icons.tag_rounded,
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Invoice number required';
                 if (!AppConstants.invoiceNumberRegex.hasMatch(v.trim())) {
-                  return 'Invalid format (Alpha-numeric & dashes only)';
+                  return 'Use format: INV-YYYY-SERIAL (e.g. INV-2026-3000)';
                 }
                 return null;
               },

@@ -21,5 +21,5 @@ class AppConstants {
     'Netherlands', 'Singapore', 'Italy', 'South Korea', 'Brazil'
   ];
 
-  static final RegExp invoiceNumberRegex = RegExp(r'^INV-\d{4}-\d{1,10}$');
+  static final RegExp invoiceNumberRegex = RegExp(r'^INV-\d{4}-\d{1,10}$', caseSensitive: false);
 }

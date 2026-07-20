@@ -26,6 +26,7 @@ class DbConstants {
   static const String colPlannedMonth = 'plannedMonth';
   static const String colShippingMethod = 'shippingMethod';
   static const String colIsDeleted = 'isDeleted';
+  static const String colSyncAttempts = 'syncAttempts';
 
   // Static HS Codes table columns
   static const String colStaticHsCode = 'hs_code';

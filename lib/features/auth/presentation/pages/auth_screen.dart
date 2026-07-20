@@ -128,16 +128,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: TariffColors.navyDeep,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
         decoration: BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.topRight,
             radius: 1.5,
             colors: [
-              const Color(0xFF1E3A63).withValues(alpha: 0.3),
-              TariffColors.navyDeep,
+              isDark 
+                ? const Color(0xFF1E3A63).withValues(alpha: 0.3)
+                : const Color(0xFFE3F2FD),
+              theme.scaffoldBackgroundColor,
             ],
           ),
         ),
@@ -158,8 +163,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                     Text(
                       _isLogin ? 'OPERATOR AUTHENTICATION' : 'ENROLL NEW OPERATOR',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: TariffColors.textMuted,
+                      style: TextStyle(
+                        color: TariffColors.mutedText(context),
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 2.5,
@@ -263,11 +268,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
           ),
         ),
         const SizedBox(height: 28),
-        const Text(
+        Text(
           'TariffGuard Intelligence',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: TariffColors.textPrimary,
+            color: TariffColors.text(context),
             fontSize: 26,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.8,
@@ -299,38 +304,40 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
     TextInputType inputType = TextInputType.text,
     String? Function(String?)? validator,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return TextFormField(
       controller: controller,
       keyboardType: inputType,
       obscureText: isPassword && obscure,
       validator: validator,
-      style: const TextStyle(color: TariffColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+      style: TextStyle(color: TariffColors.text(context), fontSize: 14, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, size: 20, color: TariffColors.textMuted),
+        prefixIcon: Icon(icon, size: 20, color: TariffColors.mutedText(context)),
         suffixIcon: isPassword 
           ? IconButton(
               icon: Icon(
                 obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
                 size: 20,
-                color: TariffColors.textMuted,
+                color: TariffColors.mutedText(context),
               ),
               onPressed: toggleObscure,
             )
           : null,
-        labelStyle: const TextStyle(color: TariffColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.0),
-        hintStyle: const TextStyle(color: TariffColors.textMuted, fontSize: 13),
+        labelStyle: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.grey[700], fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.0),
+        hintStyle: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[400], fontSize: 13),
         filled: true,
-        fillColor: TariffColors.navySurface,
+        fillColor: TariffColors.surface(context),
         contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: TariffColors.inputBorder, width: 1.5),
+          borderSide: BorderSide(color: TariffColors.border(context), width: 1.5),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: TariffColors.inputBorder, width: 1.5),
+          borderSide: BorderSide(color: TariffColors.border(context), width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -380,7 +387,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
       children: [
         Text(
           _isLogin ? "NEW OPERATOR?" : "EXISTING OPERATOR?",
-          style: const TextStyle(color: TariffColors.textMuted, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+          style: TextStyle(color: TariffColors.mutedText(context), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5),
         ),
         const SizedBox(width: 4),
         TextButton(

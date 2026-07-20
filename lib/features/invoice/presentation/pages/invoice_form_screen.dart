@@ -244,7 +244,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Invoice number required';
               if (!AppConstants.invoiceNumberRegex.hasMatch(v.trim())) {
-                return 'Invalid format (Alpha-numeric \u0026 dashes only)';
+                return 'Use format: INV-YYYY-SERIAL (e.g. INV-2026-3000)';
               }
               return null;
             },
@@ -844,15 +844,15 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           color: TariffColors.textMuted,
         ),
         SizedBox(width: 5),
-        Text(
-          'AES-256 encrypted \u00b7 Stored in local vault \u00b7 Tamper-evident',
-          style: TextStyle(
-            color: TariffColors.textMuted,
-            fontSize: 11,
-            letterSpacing: 0.3,
-          ),
-          textAlign: TextAlign.center,
-        ),
+        // Text(
+        //   'AES-256 encrypted \u00b7 Stored in local vault \u00b7 Tamper-evident',
+        //   style: TextStyle(
+        //     color: TariffColors.textMuted,
+        //     fontSize: 11,
+        //     letterSpacing: 0.3,
+        //   ),
+        //   textAlign: TextAlign.center,
+        // ),
       ],
     );
   }

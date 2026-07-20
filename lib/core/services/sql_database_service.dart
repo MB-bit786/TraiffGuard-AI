@@ -25,16 +25,17 @@ class SqlDatabaseService {
 
       return await openDatabase(
         path,
-        version: 9,
+        version: 10,
         onCreate: _onCreate,
         onUpgrade: (db, oldVersion, newVersion) async {
-          if (oldVersion < 9) {
-            debugPrint('[DATABASE] Upgrading schema to v9: Consolidating tables...');
-            // In a production app, we would perform a data migration here.
-            // For development, we drop and recreate to ensure schema integrity.
-            await db.execute('DROP TABLE IF EXISTS audit_results');
-            await db.execute('DROP TABLE IF EXISTS invoices');
-            await _createInvoicesTable(db);
+          if (oldVersion < 10) {
+            debugPrint('[DATABASE] Upgrading schema to v10: Adding sync attempts...');
+            // We use a safe migration path: add column if missing
+            try {
+              await db.execute('ALTER TABLE invoices ADD COLUMN ${DbConstants.colSyncAttempts} INTEGER DEFAULT 0');
+            } catch (e) {
+              debugPrint('[DATABASE] Column might already exist: $e');
+            }
           }
         },
       );

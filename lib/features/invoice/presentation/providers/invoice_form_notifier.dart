@@ -47,6 +47,8 @@ class InvoiceFormNotifier extends StateNotifier<InvoiceFormState> {
     required String totalWeightKg,
     required String plannedMonth,
     required String shippingMethod,
+    required String originPort,
+    required String destinationPort,
     String? hsCode,
   }) async {
     final bool effectivelyOnline = _ref.read(connectionProvider).effectivelyOnline;
@@ -65,6 +67,8 @@ class InvoiceFormNotifier extends StateNotifier<InvoiceFormState> {
       totalWeightKg: totalWeightKg,
       plannedMonth: plannedMonth,
       shippingMethod: shippingMethod,
+      originPort: originPort,
+      destinationPort: destinationPort,
       userId: userId,
       effectivelyOnline: effectivelyOnline,
       hsCode: hsCode,

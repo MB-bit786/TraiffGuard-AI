@@ -1,4 +1,4 @@
-import '../../domain/entities/invoice_entity.dart';
+import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 
 class InvoiceModel extends InvoiceEntity {
   const InvoiceModel({

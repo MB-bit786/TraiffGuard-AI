@@ -30,6 +30,11 @@ class HsAuditResultEntity {
     this.plannedMonth = 'January',
     this.shippingMethod = 'Sea Freight',
     this.isDeleted = false,
+    this.nationalExtensionCode = '',
+    this.nationalExtensionDescription = '',
+    this.originPort = '',
+    this.destinationPort = '',
+    this.portCharges = const [],
   });
 
   final String hsCode;
@@ -57,4 +62,9 @@ class HsAuditResultEntity {
   final String plannedMonth;
   final String shippingMethod;
   final bool isDeleted;
+  final String nationalExtensionCode;
+  final String nationalExtensionDescription;
+  final String originPort;
+  final String destinationPort;
+  final List<Map<String, String>> portCharges;
 }

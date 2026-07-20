@@ -25,16 +25,27 @@ class SqlDatabaseService {
 
       return await openDatabase(
         path,
-        version: 10,
+        version: 11,
         onCreate: _onCreate,
         onUpgrade: (db, oldVersion, newVersion) async {
           if (oldVersion < 10) {
             debugPrint('[DATABASE] Upgrading schema to v10: Adding sync attempts...');
-            // We use a safe migration path: add column if missing
             try {
               await db.execute('ALTER TABLE invoices ADD COLUMN ${DbConstants.colSyncAttempts} INTEGER DEFAULT 0');
             } catch (e) {
-              debugPrint('[DATABASE] Column might already exist: $e');
+              debugPrint('[DATABASE] Column colSyncAttempts might already exist: $e');
+            }
+          }
+          if (oldVersion < 11) {
+            debugPrint('[DATABASE] Upgrading schema to v11: Adding national extensions and port surcharges...');
+            try {
+              await db.execute('ALTER TABLE invoices ADD COLUMN ${DbConstants.colNationalExtensionCode} TEXT');
+              await db.execute('ALTER TABLE invoices ADD COLUMN ${DbConstants.colNationalExtensionDescription} TEXT');
+              await db.execute('ALTER TABLE invoices ADD COLUMN ${DbConstants.colOriginPort} TEXT');
+              await db.execute('ALTER TABLE invoices ADD COLUMN ${DbConstants.colDestinationPort} TEXT');
+              await db.execute('ALTER TABLE invoices ADD COLUMN ${DbConstants.colPortCharges} TEXT');
+            } catch (e) {
+              debugPrint('[DATABASE] Error during v11 migration: $e');
             }
           }
         },
@@ -88,7 +99,13 @@ class SqlDatabaseService {
         ${DbConstants.colTotalWeightKg} TEXT DEFAULT "0",
         ${DbConstants.colPlannedMonth} TEXT DEFAULT "January",
         ${DbConstants.colShippingMethod} TEXT DEFAULT "Sea Freight",
-        ${DbConstants.colIsDeleted} INTEGER DEFAULT 0
+        ${DbConstants.colIsDeleted} INTEGER DEFAULT 0,
+        ${DbConstants.colSyncAttempts} INTEGER DEFAULT 0,
+        ${DbConstants.colNationalExtensionCode} TEXT,
+        ${DbConstants.colNationalExtensionDescription} TEXT,
+        ${DbConstants.colOriginPort} TEXT,
+        ${DbConstants.colDestinationPort} TEXT,
+        ${DbConstants.colPortCharges} TEXT
       )
     ''');
   }

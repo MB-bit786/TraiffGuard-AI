@@ -27,6 +27,11 @@ class DbConstants {
   static const String colShippingMethod = 'shippingMethod';
   static const String colIsDeleted = 'isDeleted';
   static const String colSyncAttempts = 'syncAttempts';
+  static const String colNationalExtensionCode = 'nationalExtensionCode';
+  static const String colNationalExtensionDescription = 'nationalExtensionDescription';
+  static const String colOriginPort = 'originPort';
+  static const String colDestinationPort = 'destinationPort';
+  static const String colPortCharges = 'portCharges';
 
   // Static HS Codes table columns
   static const String colStaticHsCode = 'hs_code';

@@ -20,6 +20,8 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   final _consigneeController = TextEditingController();
   final _invoiceNumberController = TextEditingController();
   final _cargoDescController = TextEditingController();
+  final _originPortController = TextEditingController();
+  final _destPortController = TextEditingController();
   final _valueController = TextEditingController();
   final _weightController = TextEditingController();
 
@@ -57,6 +59,8 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
     _consigneeController.dispose();
     _invoiceNumberController.dispose();
     _cargoDescController.dispose();
+    _originPortController.dispose();
+    _destPortController.dispose();
     _valueController.dispose();
     _weightController.dispose();
     _otherOriginController.dispose();
@@ -102,6 +106,8 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           totalWeightKg: _weightController.text,
           plannedMonth: _selectedMonth,
           shippingMethod: _selectedShippingMethod,
+          originPort: _originPortController.text.trim(),
+          destinationPort: _destPortController.text.trim(),
         );
 
     if (mounted && success) {
@@ -243,6 +249,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
             icon: Icons.tag_rounded,
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Invoice number required';
+              // Regex check for INV-YYYY-SERIAL (e.g. INV-2026-3000)
               if (!AppConstants.invoiceNumberRegex.hasMatch(v.trim())) {
                 return 'Use format: INV-YYYY-SERIAL (e.g. INV-2026-3000)';
               }
@@ -304,6 +311,30 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                   ),
               ],
             ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTextField(
+                  controller: _originPortController,
+                  label: 'Origin Port',
+                  hint: 'e.g. Shanghai',
+                  icon: Icons.anchor_rounded,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTextField(
+                  controller: _destPortController,
+                  label: 'Arrival Port',
+                  hint: 'e.g. Los Angeles',
+                  icon: Icons.directions_boat_filled_rounded,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 24),
           _buildSectionLabel('CARGO \u0026 VALUATION'),
           const SizedBox(height: 12),

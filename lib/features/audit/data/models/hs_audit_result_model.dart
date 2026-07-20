@@ -28,6 +28,11 @@ class HsAuditResultModel extends HsAuditResultEntity {
     super.plannedMonth = 'January',
     super.shippingMethod = 'Sea Freight',
     super.isDeleted = false,
+    super.nationalExtensionCode = '',
+    super.nationalExtensionDescription = '',
+    super.originPort = '',
+    super.destinationPort = '',
+    super.portCharges = const [],
   });
 
   /// Maps the object to a format suitable for local database persistence.
@@ -58,6 +63,11 @@ class HsAuditResultModel extends HsAuditResultEntity {
       'plannedMonth': plannedMonth,
       'shippingMethod': shippingMethod,
       'isDeleted': isDeleted ? 1 : 0,
+      'nationalExtensionCode': nationalExtensionCode,
+      'nationalExtensionDescription': nationalExtensionDescription,
+      'originPort': originPort,
+      'destinationPort': destinationPort,
+      'portCharges': json.encode(portCharges),
     };
   }
 
@@ -89,6 +99,11 @@ class HsAuditResultModel extends HsAuditResultEntity {
       plannedMonth: _asString(map['plannedMonth'], 'January'),
       shippingMethod: _asString(map['shippingMethod'], 'Sea Freight'),
       isDeleted: _asBoolFromInt(map['isDeleted']),
+      nationalExtensionCode: _asString(map['nationalExtensionCode']),
+      nationalExtensionDescription: _asString(map['nationalExtensionDescription']),
+      originPort: _asString(map['originPort']),
+      destinationPort: _asString(map['destinationPort']),
+      portCharges: _asPortChargesList(map['portCharges']),
     );
   }
 
@@ -136,6 +151,37 @@ class HsAuditResultModel extends HsAuditResultEntity {
     return [value.toString()];
   }
 
+  static List<Map<String, String>> _asPortChargesList(dynamic value) {
+    if (value == null) return [];
+    
+    // 1. Handle JSON encoded string (common in SQFlite)
+    if (value is String && value.startsWith('[')) {
+      try {
+        final decoded = json.decode(value);
+        if (decoded is List) {
+          return decoded.map((e) {
+            if (e is Map) {
+              return e.map((k, v) => MapEntry(k.toString(), v.toString()));
+            }
+            return <String, String>{};
+          }).where((m) => m.isNotEmpty).toList();
+        }
+      } catch (_) {}
+    }
+
+    // 2. Handle actual List from Firestore
+    if (value is List) {
+      return value.map((e) {
+        if (e is Map) {
+          return e.map((k, v) => MapEntry(k.toString(), v.toString()));
+        }
+        return <String, String>{};
+      }).where((m) => m.isNotEmpty).toList();
+    }
+
+    return [];
+  }
+
   static RiskLevel parseRiskLevel(dynamic value) {
     final String val = _asString(value, 'low').toLowerCase().replaceAll('_', '');
     if (val == 'invalidinput') return RiskLevel.invalidInput;
@@ -179,6 +225,11 @@ class HsAuditResultModel extends HsAuditResultEntity {
     String? plannedMonth,
     String? shippingMethod,
     bool? isDeleted,
+    String? nationalExtensionCode,
+    String? nationalExtensionDescription,
+    String? originPort,
+    String? destinationPort,
+    List<Map<String, String>>? portCharges,
   }) {
     return HsAuditResultModel(
       hsCode: hsCode ?? this.hsCode,
@@ -206,6 +257,11 @@ class HsAuditResultModel extends HsAuditResultEntity {
       plannedMonth: plannedMonth ?? this.plannedMonth,
       shippingMethod: shippingMethod ?? this.shippingMethod,
       isDeleted: isDeleted ?? this.isDeleted,
+      nationalExtensionCode: nationalExtensionCode ?? this.nationalExtensionCode,
+      nationalExtensionDescription: nationalExtensionDescription ?? this.nationalExtensionDescription,
+      originPort: originPort ?? this.originPort,
+      destinationPort: destinationPort ?? this.destinationPort,
+      portCharges: portCharges ?? this.portCharges,
     );
   }
 }

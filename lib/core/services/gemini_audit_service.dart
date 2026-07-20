@@ -75,6 +75,8 @@ class GeminiAuditService {
     required String totalWeightKg,
     required String plannedMonth,
     required String shippingMethod,
+    required String originPort,
+    required String destinationPort,
   }) async {
     final prompt = '''
       Act as an expert World Customs Organization (WCO) customs auditor. 
@@ -83,6 +85,8 @@ class GeminiAuditService {
       - Suggested/Initial HS Code: "$hsCode"
       - Origin Country (Made in): "$originCountry"
       - Destination Country (Importing to): "$destinationCountry"
+      - Origin Port (Departure): "$originPort"
+      - Destination Port (Arrival): "$destinationPort"
       - Declared Value: $declaredValue
       - Currency: "$currency"
       - Total Weight: $totalWeightKg kg
@@ -93,23 +97,25 @@ class GeminiAuditService {
 
       Instructions:
       1. Validate or correct the 6-digit HS Code based on the description.
-      2. Provide the official WCO nomenclature description for that code.
+      2. Determine the country-specific national suffix extension (e.g. HTSUS for US, TARIC for EU, ITC-HS for India) based on the destination country. Provide both the code (8, 10, or 12 digits) and its specific tariff description.
       3. Identify the relevant HS Chapter (e.g., 'Chapter 85 — Electrical Machinery').
       4. Estimate the Standard Import Duty rate for this commodity based on the Destination Country and Origin.
       5. Estimate the VAT / GST rate applicable for this shipment in the Destination Country.
       6. Calculate the Estimated Duty Payable amount based on the Declared Value and Currency.
-      7. Calculate the Total Tax Burden percentage (Duty + VAT).
-      8. Calculate a Confidence Score (1 to 100) for this classification. 
-         CRITICAL: Must be returned strictly as a whole INTEGER value between 1 and 100.
-      9. Identify critical Compliance Warnings (e.g., Hazmat, Sanctions, CITES, Licensing).
-      10. List the Required Documents for customs clearance (e.g., MSDS, COO, Invoice).
+      7. Parse local seaport transit dues, security fees, and Terminal Handling Charges (THC) between "$originPort" and "$destinationPort".
+      8. Calculate the Total Tax Burden percentage (Duty + VAT).
+      9. Calculate a Confidence Score (1 to 100) for this classification. 
+      10. Identify critical Compliance Warnings (e.g., Hazmat, Sanctions, CITES, Licensing).
+      11. List the Required Documents for customs clearance.
 
       You must return ONLY a raw, minified, valid JSON object matching the structure below. No conversational text, no markdown code blocks.
       
       JSON Structure:
       {
-        "hsCode": "string",
-        "hsDescription": "string",
+        "hsCode": "string (6-digit universal)",
+        "nationalExtensionCode": "string (full national code)",
+        "nationalExtensionDescription": "string (detailed national tariff text)",
+        "hsDescription": "string (universal description)",
         "chapter": "string",
         "dutyRate": "string",
         "vatRate": "string",
@@ -118,7 +124,10 @@ class GeminiAuditService {
         "confidenceScore": integer,
         "riskLevel": "string",
         "complianceWarnings": ["string"],
-        "requiredDocuments": ["string"]
+        "requiredDocuments": ["string"],
+        "originPort": "string",
+        "destinationPort": "string",
+        "portCharges": [{"chargeName": "string", "amount": "string", "currency": "string"}]
       }
     ''';
 

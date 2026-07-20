@@ -1,4 +1,4 @@
-import '../../../invoice/domain/entities/invoice_entity.dart';
+import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import '../../presentation/providers/dashboard_stats_provider.dart';
 
 class CalculateDashboardStatsUseCase {

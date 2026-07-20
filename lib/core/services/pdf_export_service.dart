@@ -29,6 +29,11 @@ class PdfExportService {
             _buildSectionHeader('WCO CLASSIFICATION PANEL'),
             _buildClassificationPanel(audit),
             pw.SizedBox(height: 12),
+            if (audit.portCharges.isNotEmpty) ...[
+              _buildSectionHeader('PORT HANDLING \u0026 SURCHARGES'),
+              _buildPortChargesTable(audit),
+              pw.SizedBox(height: 12),
+            ],
             _buildSectionHeader('FINANCIAL ASSESSMENT LEDGER'),
             _buildFinancialLedger(audit),
             
@@ -125,8 +130,8 @@ class PdfExportService {
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
       children: [
-        _tableRow('CONSIGNEE', audit.consignee, 'ORIGIN', audit.originCountry),
-        _tableRow('REF', audit.invoiceNumber, 'DESTINATION', audit.destinationCountry),
+        _tableRow('CONSIGNEE', audit.consignee, 'ORIGIN PORT', audit.originPort.isNotEmpty ? audit.originPort : audit.originCountry),
+        _tableRow('REF', audit.invoiceNumber, 'DESTINATION PORT', audit.destinationPort.isNotEmpty ? audit.destinationPort : audit.destinationCountry),
         _tableRow('WEIGHT', '${audit.totalWeightKg} KG', 'METHOD', audit.shippingMethod),
         _tableRow('VALUE', '${audit.currency} ${audit.declaredValue}', 'PLANNED', audit.plannedMonth),
       ],
@@ -180,17 +185,30 @@ class PdfExportService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('OFFICIAL HS CODE (6-DIGIT)', style: const pw.TextStyle(color: PdfColors.grey700, fontSize: 6)),
+                  pw.Text('OFFICIAL HS CODE (6-DIGIT UNIVERSAL)', style: const pw.TextStyle(color: PdfColors.grey700, fontSize: 6)),
                   pw.SizedBox(height: 1),
                   pw.Text(
                     audit.hsCode,
                     style: pw.TextStyle(
                       color: PdfColors.blue900, 
-                      fontSize: 18, 
+                      fontSize: 14, 
                       fontWeight: pw.FontWeight.bold, 
                       font: pw.Font.courierBold(),
                     ),
                   ),
+                  if (audit.nationalExtensionCode.isNotEmpty) ...[
+                    pw.SizedBox(height: 4),
+                    pw.Text('NATIONAL TARIFF EXTENSION', style: const pw.TextStyle(color: PdfColors.grey700, fontSize: 6)),
+                    pw.Text(
+                      audit.nationalExtensionCode,
+                      style: pw.TextStyle(
+                        color: PdfColors.blue900, 
+                        fontSize: 16, 
+                        fontWeight: pw.FontWeight.bold, 
+                        font: pw.Font.courierBold(),
+                      ),
+                    ),
+                  ],
                 ],
               ),
               pw.Container(
@@ -217,8 +235,38 @@ class PdfExportService {
           pw.SizedBox(height: 6),
           pw.Text('WCO TARIFF DESCRIPTION (NOMENCLATURE)', style: const pw.TextStyle(color: PdfColors.grey700, fontSize: 6)),
           pw.Text(audit.hsDescription, style: pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.blueGrey800)),
+          if (audit.nationalExtensionDescription.isNotEmpty) ...[
+            pw.SizedBox(height: 4),
+            pw.Text('NATIONAL TARIFF DESCRIPTION', style: const pw.TextStyle(color: PdfColors.grey700, fontSize: 6)),
+            pw.Text(audit.nationalExtensionDescription, style: pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.blueGrey800)),
+          ],
         ],
       ),
+    );
+  }
+
+  pw.Widget _buildPortChargesTable(HsAuditResultModel audit) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+      columnWidths: {0: const pw.FlexColumnWidth(3), 1: const pw.FlexColumnWidth(1)},
+      children: [
+        ...audit.portCharges.map((charge) => pw.TableRow(
+          children: [
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(6),
+              child: pw.Text(charge['chargeName'] ?? 'Handling Fee', style: const pw.TextStyle(fontSize: 8)),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(6),
+              child: pw.Text(
+                '${charge['currency']} ${charge['amount']}', 
+                textAlign: pw.TextAlign.right, 
+                style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, font: pw.Font.courierBold()),
+              ),
+            ),
+          ],
+        )),
+      ],
     );
   }
 

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import '../entities/invoice_entity.dart';
+import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 import '../repository/invoice_repository.dart';
 import 'package:hscode_auditor/core/services/gemini_audit_service.dart';
@@ -16,6 +16,8 @@ class AuditParams {
   final String totalWeightKg;
   final String plannedMonth;
   final String shippingMethod;
+  final String originPort;
+  final String destinationPort;
   final String? hsCode;
   final String userId;
   final bool effectivelyOnline;
@@ -31,6 +33,8 @@ class AuditParams {
     required this.totalWeightKg,
     required this.plannedMonth,
     required this.shippingMethod,
+    required this.originPort,
+    required this.destinationPort,
     required this.userId,
     required this.effectivelyOnline,
     this.hsCode,
@@ -138,6 +142,8 @@ class InvoiceUseCases {
         totalWeightKg: params.totalWeightKg,
         plannedMonth: params.plannedMonth,
         shippingMethod: params.shippingMethod,
+        originPort: params.originPort,
+        destinationPort: params.destinationPort,
       );
 
       final Map<String, dynamic> aiData = json.decode(jsonResponse);
@@ -178,6 +184,11 @@ class InvoiceUseCases {
         shippingMethod: params.shippingMethod,
         complianceWarnings: List<String>.from(aiData['complianceWarnings'] ?? []),
         requiredDocuments: List<String>.from(aiData['requiredDocuments'] ?? []),
+        nationalExtensionCode: aiData['nationalExtensionCode']?.toString() ?? '',
+        nationalExtensionDescription: aiData['nationalExtensionDescription']?.toString() ?? '',
+        originPort: aiData['originPort']?.toString() ?? params.originPort,
+        destinationPort: aiData['destinationPort']?.toString() ?? params.destinationPort,
+        portCharges: _parsePortCharges(aiData['portCharges']),
       );
 
       final syncedManifest = InvoiceEntity(
@@ -210,6 +221,16 @@ class InvoiceUseCases {
       (e) => e.name.toLowerCase() == lowerValue,
       orElse: () => RiskLevel.medium,
     );
+  }
+
+  List<Map<String, String>> _parsePortCharges(dynamic raw) {
+    if (raw is! List) return [];
+    return raw.map((e) {
+      if (e is Map) {
+        return e.map((k, v) => MapEntry(k.toString(), v.toString()));
+      }
+      return <String, String>{};
+    }).where((m) => m.isNotEmpty).toList();
   }
 
   double _calculateOfflineTariff(String origin, String destination) {

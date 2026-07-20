@@ -225,9 +225,15 @@ class AuditResultScreen extends ConsumerWidget {
       children: [
         _buildHeroHSCodeCard(context, result),
         const SizedBox(height: 14),
+        _buildNationalExtensionCard(context, result),
+        const SizedBox(height: 14),
+        _buildSeaportRoutingCard(context, result),
+        const SizedBox(height: 14),
         _buildConfidenceBar(context, result),
         const SizedBox(height: 14),
         _buildTariffBreakdownCard(context, result),
+        const SizedBox(height: 14),
+        _buildPortChargesCard(context, result),
         const SizedBox(height: 14),
         _buildRiskWarningCard(context, result),
         const SizedBox(height: 14),
@@ -236,6 +242,177 @@ class AuditResultScreen extends ConsumerWidget {
         _buildInvoiceMetaCard(context, result),
         const SizedBox(height: 80),
       ],
+    );
+  }
+
+  Widget _buildNationalExtensionCard(BuildContext context, HsAuditResultEntity result) {
+    if (result.nationalExtensionCode.isEmpty) return const SizedBox.shrink();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? TariffColors.navySurface : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: TariffColors.amberPending.withValues(alpha: 0.4), width: 1.5),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.flag_rounded, color: TariffColors.amberPending, size: 18),
+              const SizedBox(width: 8),
+              const Text(
+                'NATIONAL TARIFF EXTENSION',
+                style: TextStyle(color: TariffColors.amberPending, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            result.nationalExtensionCode,
+            style: TextStyle(
+              color: isDark ? TariffColors.textPrimary : Colors.black87,
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'monospace',
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            result.nationalExtensionDescription,
+            style: TextStyle(
+              color: isDark ? TariffColors.textSecondary : Colors.black54,
+              fontSize: 13,
+              height: 1.4,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeaportRoutingCard(BuildContext context, HsAuditResultEntity result) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final String origin = result.originPort.isNotEmpty ? result.originPort : result.originCountry;
+    final String dest = result.destinationPort.isNotEmpty ? result.destinationPort : result.destinationCountry;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? TariffColors.navySurface : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('DEPARTURE PORT', style: TextStyle(color: TariffColors.textMuted, fontSize: 9, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 4),
+                    Text(origin, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 14)),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Icon(Icons.arrow_forward_rounded, color: TariffColors.amberPending, size: 20),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text('ARRIVAL PORT', style: TextStyle(color: TariffColors.textMuted, fontSize: 9, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 4),
+                    Text(dest, textAlign: TextAlign.right, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 14)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildMiniMeta('SHIPPING', result.shippingMethod),
+              _buildMiniMeta('WEIGHT', '${result.totalWeightKg} KG'),
+              _buildMiniMeta('ENTRY', result.plannedMonth),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniMeta(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: TariffColors.textMuted, fontSize: 8, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+      ],
+    );
+  }
+
+  Widget _buildPortChargesCard(BuildContext context, HsAuditResultEntity result) {
+    if (result.portCharges.isEmpty) return const SizedBox.shrink();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? TariffColors.navySurface : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Row(
+              children: [
+                Icon(Icons.anchor_rounded, size: 16, color: TariffColors.textMuted),
+                SizedBox(width: 8),
+                Text(
+                  'PORT HANDLING \u0026 SURCHARGES',
+                  style: TextStyle(color: TariffColors.textMuted, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.5),
+                ),
+              ],
+            ),
+          ),
+          ...result.portCharges.map((charge) => Column(
+            children: [
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        charge['chargeName'] ?? 'Unknown Handling',
+                        style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 12),
+                      ),
+                    ),
+                    Text(
+                      '${charge['currency']} ${charge['amount']}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          )),
+        ],
+      ),
     );
   }
 

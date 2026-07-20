@@ -86,6 +86,8 @@ class AutoSyncService {
             totalWeightKg: draft.totalWeightKg,
             plannedMonth: draft.plannedMonth,
             shippingMethod: draft.shippingMethod,
+            originPort: draft.originPort,
+            destinationPort: draft.destinationPort,
           );
 
           final Map<String, dynamic> aiData = json.decode(jsonResponse);
@@ -125,6 +127,11 @@ class AutoSyncService {
             isDeleted: draft.isDeleted,
             complianceWarnings: List<String>.from(aiData['complianceWarnings'] ?? []),
             requiredDocuments: List<String>.from(aiData['requiredDocuments'] ?? []),
+            nationalExtensionCode: aiData['nationalExtensionCode']?.toString() ?? '',
+            nationalExtensionDescription: aiData['nationalExtensionDescription']?.toString() ?? '',
+            originPort: aiData['originPort']?.toString() ?? draft.originPort,
+            destinationPort: aiData['destinationPort']?.toString() ?? draft.destinationPort,
+            portCharges: _parsePortCharges(aiData['portCharges']),
           );
 
           final updatedManifest = InvoiceEntity(
@@ -166,6 +173,16 @@ class AutoSyncService {
       (e) => e.name.toLowerCase() == lowerValue,
       orElse: () => RiskLevel.medium,
     );
+  }
+
+  List<Map<String, String>> _parsePortCharges(dynamic raw) {
+    if (raw is! List) return [];
+    return raw.map((e) {
+      if (e is Map) {
+        return e.map((k, v) => MapEntry(k.toString(), v.toString()));
+      }
+      return <String, String>{};
+    }).where((m) => m.isNotEmpty).toList();
   }
 
   /// Terminates all background activity.

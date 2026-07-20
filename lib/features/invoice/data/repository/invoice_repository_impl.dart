@@ -1,5 +1,5 @@
 import 'dart:async';
-import '../../domain/entities/invoice_entity.dart';
+import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 import '../../domain/repository/invoice_repository.dart';
 import '../data_sources/invoice_local_data_source.dart';

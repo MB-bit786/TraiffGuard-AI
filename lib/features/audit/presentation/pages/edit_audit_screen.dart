@@ -7,9 +7,9 @@ import 'package:hscode_auditor/core/providers/auto_sync_provider.dart';
 import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
-import '../../../dashboard/presentation/providers/invoice_list_provider.dart';
-import '../../../invoice/presentation/providers/invoice_providers.dart';
-import '../../../invoice/domain/entities/invoice_entity.dart';
+import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
+import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart';
+import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hscode_auditor/core/constants/app_constants.dart';
 
@@ -30,6 +30,8 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
   late TextEditingController _destCountryController;
   late TextEditingController _valueController;
   late TextEditingController _weightController;
+  late TextEditingController _originPortController;
+  late TextEditingController _destPortController;
 
   late String _selectedCurrency;
   String? _selectedHsCode;
@@ -53,6 +55,8 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
     _destCountryController = TextEditingController(text: widget.audit.destinationCountry);
     _valueController = TextEditingController(text: widget.audit.declaredValue);
     _weightController = TextEditingController(text: widget.audit.totalWeightKg);
+    _originPortController = TextEditingController(text: widget.audit.originPort);
+    _destPortController = TextEditingController(text: widget.audit.destinationPort);
     
     _selectedCurrency = widget.audit.currency;
     _selectedHsCode = widget.audit.hsCode;
@@ -101,6 +105,8 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
     _destCountryController.dispose();
     _valueController.dispose();
     _weightController.dispose();
+    _originPortController.dispose();
+    _destPortController.dispose();
     _otherOriginController.dispose();
     _otherDestController.dispose();
     super.dispose();
@@ -121,7 +127,9 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
         _selectedCurrency != widget.audit.currency ||
         _selectedHsCode != widget.audit.hsCode ||
         _selectedMonth != widget.audit.plannedMonth ||
-        _selectedShippingMethod != widget.audit.shippingMethod;
+        _selectedShippingMethod != widget.audit.shippingMethod ||
+        _originPortController.text.trim() != widget.audit.originPort ||
+        _destPortController.text.trim() != widget.audit.destinationPort;
 
     if (!hasChanged) {
       context.pop();
@@ -164,9 +172,14 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
         totalWeightKg: _weightController.text.trim(),
         plannedMonth: _selectedMonth,
         shippingMethod: _selectedShippingMethod,
+        originPort: _originPortController.text.trim(),
+        destinationPort: _destPortController.text.trim(),
         isDeleted: widget.audit.isDeleted,
         complianceWarnings: ['🔄 RE-AUDIT QUEUED: Manual corrections are being analyzed by AI...'],
         requiredDocuments: widget.audit.requiredDocuments,
+        nationalExtensionCode: widget.audit.nationalExtensionCode,
+        nationalExtensionDescription: widget.audit.nationalExtensionDescription,
+        portCharges: widget.audit.portCharges,
       );
 
       final manifest = InvoiceEntity(
@@ -350,6 +363,30 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
                     ),
                 ],
               ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildTextField(
+                    controller: _originPortController,
+                    label: 'Origin Port',
+                    hint: 'e.g. Shanghai',
+                    icon: Icons.anchor_rounded,
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildTextField(
+                    controller: _destPortController,
+                    label: 'Arrival Port',
+                    hint: 'e.g. Los Angeles',
+                    icon: Icons.directions_boat_filled_rounded,
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 24),
             _buildSectionLabel('CARGO & VALUATION'),
             const SizedBox(height: 12),

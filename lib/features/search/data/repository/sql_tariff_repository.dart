@@ -1,5 +1,5 @@
 import 'package:hscode_auditor/core/services/sql_database_service.dart';
-import '../../domain/repository/tariff_repository.dart';
+import 'package:hscode_auditor/features/search/domain/repository/tariff_repository.dart';
 
 class SqlTariffRepository implements TariffRepository {
   final SqlDatabaseService _dbService;

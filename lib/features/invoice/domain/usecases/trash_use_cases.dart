@@ -1,5 +1,5 @@
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
-import '../repository/invoice_repository.dart';
+import 'package:hscode_auditor/features/invoice/domain/repository/invoice_repository.dart';
 
 class TrashUseCases {
   final InvoiceRepository repository;

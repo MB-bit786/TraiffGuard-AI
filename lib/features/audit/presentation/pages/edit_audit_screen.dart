@@ -319,6 +319,7 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
                     onChanged: (v) => setState(() {
                       _selectedOriginCountry = v!;
                       _isOtherOrigin = v == 'Other...';
+                      _originPortController.clear();
                     }),
                   ),
                 ),
@@ -331,6 +332,7 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
                     onChanged: (v) => setState(() {
                       _selectedDestCountry = v!;
                       _isOtherDest = v == 'Other...';
+                      _destPortController.clear();
                     }),
                   ),
                 ),
@@ -367,22 +369,22 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
             Row(
               children: [
                 Expanded(
-                  child: _buildTextField(
+                  child: _buildPortField(
                     controller: _originPortController,
                     label: 'Origin Port',
                     hint: 'e.g. Shanghai',
                     icon: Icons.anchor_rounded,
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                    selectedCountry: _isOtherOrigin ? _otherOriginController.text : _selectedOriginCountry,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _buildTextField(
+                  child: _buildPortField(
                     controller: _destPortController,
                     label: 'Arrival Port',
                     hint: 'e.g. Los Angeles',
                     icon: Icons.directions_boat_filled_rounded,
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                    selectedCountry: _isOtherDest ? _otherDestController.text : _selectedDestCountry,
                   ),
                 ),
               ],
@@ -453,6 +455,135 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: TariffColors.amberPending, width: 2)),
       ),
     );
+  }
+
+  Widget _buildPortField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    required String selectedCountry,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final List<String> suggestions = AppConstants.countryPorts[selectedCountry] ?? [];
+
+    return Autocomplete<String>(
+      key: ValueKey(selectedCountry),
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        if (textEditingValue.text.isEmpty) {
+          return suggestions;
+        }
+        return suggestions.where((String option) {
+          return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+        });
+      },
+      onSelected: (String selection) {
+        controller.text = selection;
+      },
+      fieldViewBuilder: (context, fieldController, focusNode, onFieldSubmitted) {
+        // Synchronize our controller with the autocomplete controller
+        if (fieldController.text != controller.text) {
+          fieldController.text = controller.text;
+        }
+        
+        fieldController.addListener(() {
+          if (controller.text != fieldController.text) {
+            controller.text = fieldController.text;
+          }
+        });
+
+        return TextFormField(
+          controller: fieldController,
+          focusNode: focusNode,
+          style: TextStyle(
+            color: isDark ? TariffColors.textPrimary : Colors.black87,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: hint,
+            prefixIcon: Icon(icon, size: 18, color: isDark ? TariffColors.textMuted : Colors.grey[400]),
+            labelStyle: TextStyle(
+              color: isDark ? TariffColors.textSecondary : Colors.grey[700],
+              fontSize: 13,
+            ),
+            hintStyle: TextStyle(
+              color: isDark ? TariffColors.textMuted : Colors.grey[400],
+              fontSize: 13,
+            ),
+            filled: true,
+            fillColor: isDark ? TariffColors.navySurface : Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: isDark ? TariffColors.inputBorder : Colors.grey[300]!, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: TariffColors.inputFocusBorder, width: 2),
+            ),
+          ),
+          validator: (v) {
+            if (v == null || v.trim().isEmpty) return 'Required';
+            
+            // Smart Validation: Check for Port-to-Country mismatch
+            if (selectedCountry != 'Other...') {
+              final String? correctCountry = _getCountryForPort(v.trim());
+              if (correctCountry != null && correctCountry != selectedCountry) {
+                return 'Warning: $v is in $correctCountry';
+              }
+            }
+            return null;
+          },
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4.0,
+            borderRadius: BorderRadius.circular(10),
+            color: isDark ? TariffColors.navyMid : Colors.white,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.4,
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final String option = options.elementAt(index);
+                  return ListTile(
+                    title: Text(
+                      option,
+                      style: TextStyle(
+                        color: isDark ? TariffColors.textPrimary : Colors.black87,
+                        fontSize: 13,
+                      ),
+                    ),
+                    onTap: () => onSelected(option),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String? _getCountryForPort(String portName) {
+    for (var entry in AppConstants.countryPorts.entries) {
+      if (entry.value.any((p) => p.toLowerCase() == portName.toLowerCase())) {
+        return entry.key;
+      }
+    }
+    return null;
   }
 
   Widget _buildCargoDescriptionField() {

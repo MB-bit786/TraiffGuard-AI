@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/features/invoice/domain/repository/invoice_repository.dart';
 import 'package:hscode_auditor/core/services/gemini_audit_service.dart';
 import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
+import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
@@ -75,6 +76,17 @@ class AutoSyncService {
       int successCount = 0;
 
       for (final draft in pendingDrafts) {
+        // Pre-flight check: Is the data "proper" enough for AI?
+        final String desc = draft.cargoDescription.trim().toLowerCase();
+        final bool isConversational = desc.contains('?') || desc.contains('how are') || desc.startsWith('hi') || desc.startsWith('hello');
+        
+        if (draft.cargoDescription.length < 10 || isConversational) {
+          debugPrint('[SYNC] Skipping record ${draft.invoiceNumber} due to improper data.');
+          // Mark it as synced with a block risk level so it doesn't loop
+          await _markAsInvalid(draft, userId);
+          continue;
+        }
+
         try {
           final String jsonResponse = await _geminiService.fetchAiCustomsAudit(
             cargoDescription: draft.cargoDescription,
@@ -151,7 +163,29 @@ class AutoSyncService {
           // Small delay to prevent API rate-limit saturation
           await Future.delayed(const Duration(milliseconds: 500));
         } catch (e) {
-          debugPrint('[SYNC] Record-level sync failure: $e');
+          debugPrint('[SYNC] Record-level sync failure for ${draft.invoiceNumber}: $e');
+          // Increment sync attempts to prevent infinite loops on specific bad records
+          try {
+            final incrementedAttempts = draft.syncAttempts + 1;
+            // We update the record locally so getPendingDraftResults will eventually ignore it (> 5 attempts)
+            final updatedDraft = (draft as HsAuditResultModel).copyWith(syncAttempts: incrementedAttempts);
+            await _repository.cacheInvoiceManifest(
+              InvoiceEntity(
+                id: draft.invoiceNumber,
+                userId: userId,
+                consignee: draft.consignee,
+                cargoDescription: draft.cargoDescription,
+                hsCode: draft.hsCode,
+                dutyRate: draft.standardDutyRate,
+                status: draft.status,
+                timestamp: draft.auditTimestamp,
+                syncAttempts: incrementedAttempts,
+              ),
+              auditResult: updatedDraft,
+            );
+          } catch (updateError) {
+            debugPrint('[SYNC] Failed to increment sync attempts: $updateError');
+          }
         }
       }
 
@@ -173,6 +207,49 @@ class AutoSyncService {
       (e) => e.name.toLowerCase() == lowerValue,
       orElse: () => RiskLevel.medium,
     );
+  }
+
+  Future<void> _markAsInvalid(HsAuditResultEntity draft, String userId) async {
+    final upgradedResult = HsAuditResultEntity(
+      hsCode: 'INVALID-INPUT',
+      userId: userId,
+      hsDescription: 'Security Block: Description was not a commercial item.',
+      chapter: '00',
+      consignee: draft.consignee,
+      invoiceNumber: draft.invoiceNumber,
+      cargoDescription: draft.cargoDescription,
+      standardDutyRate: '0%',
+      vatRate: '0%',
+      totalTaxBurden: '0%',
+      declaredValue: draft.declaredValue,
+      currency: draft.currency,
+      estimatedDutyAmount: '0',
+      confidenceScore: 1, // Set to 1 so it's not 0 (Pending)
+      riskLevel: RiskLevel.invalidInput,
+      status: 'synced',
+      auditTimestamp: DateTime.now().toString().split('.').first,
+      originCountry: draft.originCountry,
+      destinationCountry: draft.destinationCountry,
+      totalWeightKg: draft.totalWeightKg,
+      plannedMonth: draft.plannedMonth,
+      shippingMethod: draft.shippingMethod,
+      isDeleted: draft.isDeleted,
+      complianceWarnings: ['ERROR: This record was blocked by the security layer due to improper input data.'],
+      requiredDocuments: [],
+    );
+
+    final updatedManifest = InvoiceEntity(
+      id: draft.invoiceNumber,
+      userId: userId,
+      consignee: draft.consignee,
+      cargoDescription: draft.cargoDescription,
+      hsCode: 'INVALID',
+      dutyRate: 'Blocked',
+      status: 'synced',
+      timestamp: upgradedResult.auditTimestamp,
+    );
+
+    await _repository.updateAuditSyncStatus(updatedManifest, upgradedResult);
   }
 
   List<Map<String, String>> _parsePortCharges(dynamic raw) {

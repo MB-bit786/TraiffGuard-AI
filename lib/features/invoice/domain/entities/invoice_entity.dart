@@ -14,6 +14,7 @@ class InvoiceEntity {
     required this.status,
     required this.timestamp,
     this.isDeleted = false,
+    this.syncAttempts = 0,
   });
 
   final String id;
@@ -25,4 +26,5 @@ class InvoiceEntity {
   final String status; // Keep as string for DB but use enum for logic
   final String timestamp;
   final bool isDeleted;
+  final int syncAttempts;
 }

@@ -1,4 +1,4 @@
-import '../repository/tariff_repository.dart';
+import 'package:hscode_auditor/features/search/domain/repository/tariff_repository.dart';
 
 class SearchTariffUseCase {
   final TariffRepository repository;

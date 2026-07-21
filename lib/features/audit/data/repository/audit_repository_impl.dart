@@ -1,6 +1,6 @@
 import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
-import '../../domain/repository/audit_repository.dart';
-import '../../../invoice/data/data_sources/invoice_local_data_source.dart';
+import 'package:hscode_auditor/features/audit/domain/repository/audit_repository.dart';
+import 'package:hscode_auditor/features/invoice/data/data_sources/invoice_local_data_source.dart';
 
 class AuditRepositoryImpl implements AuditRepository {
   final InvoiceLocalDataSource localDataSource;

@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/core/services/sql_database_service.dart';
-import '../../domain/repository/auth_repository.dart';
-import '../../data/repository/firebase_auth_repository.dart';
-import '../../domain/usecases/auth_use_cases.dart';
+import 'package:hscode_auditor/features/auth/domain/repository/auth_repository.dart';
+import 'package:hscode_auditor/features/auth/data/repository/firebase_auth_repository.dart';
+import 'package:hscode_auditor/features/auth/domain/usecases/auth_use_cases.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return FirebaseAuthRepository();

@@ -471,9 +471,30 @@ class AuditResultScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                Text('HS CODE', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[500], fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 2.5)),
+                Text('HS CODE (UNIVERSAL)', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[500], fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 2.5)),
                 const SizedBox(height: 6),
-                Text(result.hsCode, style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 52, fontWeight: FontWeight.w900, letterSpacing: -1.0, fontFamily: 'monospace', height: 1.0)),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(result.hsCode, style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 52, fontWeight: FontWeight.w900, letterSpacing: -1.0, fontFamily: 'monospace', height: 1.0)),
+                    if (result.nationalExtensionCode.isNotEmpty) ...[
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        margin: const EdgeInsets.only(bottom: 4),
+                        decoration: BoxDecoration(
+                          color: TariffColors.amberPending.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: TariffColors.amberPending.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          result.status == 'synced' ? 'NATIONAL READY' : 'LOCAL ESTIMATE',
+                          style: TextStyle(color: TariffColors.amberPending, fontSize: 9, fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
                 const SizedBox(height: 10),
                 Text(result.hsDescription, style: const TextStyle(color: TariffColors.amberPending, fontSize: 16, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),

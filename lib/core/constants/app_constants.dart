@@ -21,5 +21,23 @@ class AppConstants {
     'Netherlands', 'Singapore', 'Italy', 'South Korea', 'Brazil'
   ];
 
+  static const Map<String, List<String>> countryPorts = {
+    'China': ['Shanghai', 'Ningbo-Zhoushan', 'Shenzhen', 'Guangzhou', 'Qingdao', 'Tianjin'],
+    'United States': ['Los Angeles', 'Long Beach', 'New York/New Jersey', 'Savannah', 'Houston'],
+    'India': ['Mumbai (JNPT)', 'Mundra', 'Chennai', 'Kolkata', 'Kochi', 'Visakhapatnam'],
+    'Germany': ['Hamburg', 'Bremen/Bremerhaven', 'Wilhelmshaven'],
+    'Japan': ['Tokyo', 'Yokohama', 'Nagoya', 'Osaka', 'Kobe'],
+    'Vietnam': ['Ho Chi Minh City', 'Hai Phong', 'Da Nang'],
+    'Mexico': ['Manzanillo', 'Lazaro Cardenas', 'Veracruz'],
+    'United Kingdom': ['Felixstowe', 'Southampton', 'London Gateway', 'Liverpool'],
+    'France': ['Le Havre', 'Marseille', 'Dunkerque'],
+    'Canada': ['Vancouver', 'Montreal', 'Prince Rupert', 'Halifax'],
+    'Netherlands': ['Rotterdam', 'Amsterdam'],
+    'Singapore': ['Singapore'],
+    'Italy': ['Genoa', 'Trieste', 'Gioia Tauro'],
+    'South Korea': ['Busan', 'Incheon', 'Gwangyang'],
+    'Brazil': ['Santos', 'Itajai', 'Paranagua'],
+  };
+
   static final RegExp invoiceNumberRegex = RegExp(r'^INV-\d{4}-\d{1,10}$', caseSensitive: false);
 }

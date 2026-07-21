@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
-import 'app_routes.dart';
+import 'package:hscode_auditor/config/routes/app_routes.dart';
 
 // Import all screens
 import 'package:hscode_auditor/features/auth/presentation/pages/auth_screen.dart';

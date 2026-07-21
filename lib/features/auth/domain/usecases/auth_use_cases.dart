@@ -4,10 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
-import '../../../../core/constants/db_constants.dart';
-import '../../../../core/services/sql_database_service.dart';
-import '../../../dashboard/presentation/providers/connection_provider.dart';
-import '../repository/auth_repository.dart';
+import 'package:hscode_auditor/core/constants/db_constants.dart';
+import 'package:hscode_auditor/core/services/sql_database_service.dart';
+import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
+import 'package:hscode_auditor/features/auth/domain/repository/auth_repository.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
 
 /// Unified Authentication Engine

@@ -11,6 +11,7 @@ class InvoiceModel extends InvoiceEntity {
     required super.status,
     required super.timestamp,
     super.isDeleted = false,
+    super.syncAttempts = 0,
   });
 
   Map<String, dynamic> toMap() {
@@ -24,6 +25,7 @@ class InvoiceModel extends InvoiceEntity {
       'status': status,
       'timestamp': timestamp,
       'isDeleted': isDeleted ? 1 : 0,
+      'syncAttempts': syncAttempts,
     };
   }
 
@@ -38,6 +40,7 @@ class InvoiceModel extends InvoiceEntity {
       status: map['status'] as String,
       timestamp: map['timestamp'] as String,
       isDeleted: (map['isDeleted'] as int? ?? 0) == 1,
+      syncAttempts: map['syncAttempts'] as int? ?? 0,
     );
   }
 
@@ -51,6 +54,7 @@ class InvoiceModel extends InvoiceEntity {
     String? status,
     String? timestamp,
     bool? isDeleted,
+    int? syncAttempts,
   }) {
     return InvoiceModel(
       id: id ?? this.id,
@@ -62,6 +66,7 @@ class InvoiceModel extends InvoiceEntity {
       status: status ?? this.status,
       timestamp: timestamp ?? this.timestamp,
       isDeleted: isDeleted ?? this.isDeleted,
+      syncAttempts: syncAttempts ?? this.syncAttempts,
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../invoice/domain/usecases/trash_use_cases.dart';
+import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hscode_auditor/features/invoice/domain/usecases/trash_use_cases.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart' as inv;
 
 final trashUseCasesProvider = Provider<TrashUseCases>((ref) {

@@ -30,6 +30,7 @@ class HsAuditResultEntity {
     this.plannedMonth = 'January',
     this.shippingMethod = 'Sea Freight',
     this.isDeleted = false,
+    this.syncAttempts = 0,
     this.nationalExtensionCode = '',
     this.nationalExtensionDescription = '',
     this.originPort = '',
@@ -62,6 +63,7 @@ class HsAuditResultEntity {
   final String plannedMonth;
   final String shippingMethod;
   final bool isDeleted;
+  final int syncAttempts;
   final String nationalExtensionCode;
   final String nationalExtensionDescription;
   final String originPort;

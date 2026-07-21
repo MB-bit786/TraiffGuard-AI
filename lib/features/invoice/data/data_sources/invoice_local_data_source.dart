@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
-import '../../../../core/services/sql_database_service.dart';
+import 'package:hscode_auditor/core/services/sql_database_service.dart';
 import 'package:hscode_auditor/core/constants/db_constants.dart';
-import '../models/invoice_model.dart';
+import 'package:hscode_auditor/features/invoice/data/models/invoice_model.dart';
 import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
 import 'dart:convert';
 
@@ -98,6 +98,11 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
         DbConstants.colPlannedMonth: result.plannedMonth,
         DbConstants.colShippingMethod: result.shippingMethod,
         DbConstants.colIsDeleted: result.isDeleted ? 1 : 0,
+        DbConstants.colNationalExtensionCode: result.nationalExtensionCode,
+        DbConstants.colNationalExtensionDescription: result.nationalExtensionDescription,
+        DbConstants.colOriginPort: result.originPort,
+        DbConstants.colDestinationPort: result.destinationPort,
+        DbConstants.colPortCharges: json.encode(result.portCharges),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -118,9 +123,14 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
   @override
   Future<List<HsAuditResultModel>> getPendingDraftResults(String userId) async {
     final db = await _dbService.database;
+    // CRITICAL: We only pick up records that are explicitly NOT synced and have < 5 failed attempts.
+    // This prevents the "Loop of Death" if AI returns an 'INVALID_INPUT' (which has status 'synced').
     final maps = await db.query(
       'invoices',
-      where: '(${DbConstants.colConfidenceScore} = 0 OR ${DbConstants.colHsCode} LIKE "%(Offline Draft)%") AND ${DbConstants.colIsDeleted} = 0 AND ${DbConstants.colUserId} = ?',
+      where: '(${DbConstants.colConfidenceScore} = 0 OR ${DbConstants.colHsCode} LIKE "%(Offline Draft)%") '
+             'AND ${DbConstants.colStatus} != "synced" '
+             'AND ${DbConstants.colSyncAttempts} < 5 '
+             'AND ${DbConstants.colIsDeleted} = 0 AND ${DbConstants.colUserId} = ?',
       whereArgs: [userId],
     );
     return maps.map((m) => _mapToHsAuditResultModel(m)).toList();
@@ -222,6 +232,14 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
       plannedMonth: map[DbConstants.colPlannedMonth] as String? ?? 'January',
       shippingMethod: map[DbConstants.colShippingMethod] as String? ?? 'Sea Freight',
       isDeleted: (map[DbConstants.colIsDeleted] as int? ?? 0) == 1,
+      nationalExtensionCode: map[DbConstants.colNationalExtensionCode] as String? ?? '',
+      nationalExtensionDescription: map[DbConstants.colNationalExtensionDescription] as String? ?? '',
+      originPort: map[DbConstants.colOriginPort] as String? ?? '',
+      destinationPort: map[DbConstants.colDestinationPort] as String? ?? '',
+      portCharges: (map[DbConstants.colPortCharges] is String) 
+          ? List<Map<String, String>>.from((json.decode(map[DbConstants.colPortCharges] as String) as List)
+              .map((e) => Map<String, String>.from(e as Map)))
+          : [],
     );
   }
 }

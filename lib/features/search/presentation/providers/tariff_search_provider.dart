@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/repository/tariff_repository.dart';
-import '../../data/repository/sql_tariff_repository.dart';
-import '../../domain/usecases/search_tariff_use_case.dart';
-import '../../../../core/services/sql_database_service.dart';
+import 'package:hscode_auditor/features/search/domain/repository/tariff_repository.dart';
+import 'package:hscode_auditor/features/search/data/repository/sql_tariff_repository.dart';
+import 'package:hscode_auditor/features/search/domain/usecases/search_tariff_use_case.dart';
+import 'package:hscode_auditor/core/services/sql_database_service.dart';
 
 final tariffRepositoryProvider = Provider<TariffRepository>((ref) {
   final dbService = ref.watch(sqlDatabaseServiceProvider);

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/invoice_list_provider.dart';
-import '../../domain/usecases/calculate_dashboard_stats_use_case.dart';
+import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
+import 'package:hscode_auditor/features/dashboard/domain/usecases/calculate_dashboard_stats_use_case.dart';
 
 class DashboardStats {
   final int total;

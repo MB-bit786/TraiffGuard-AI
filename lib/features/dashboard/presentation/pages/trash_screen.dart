@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/config/theme/tariff_colors.dart';
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
-import '../providers/trash_list_provider.dart';
-import '../providers/invoice_list_provider.dart';
+import 'package:hscode_auditor/features/dashboard/presentation/providers/trash_list_provider.dart';
+import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
 import 'package:go_router/go_router.dart';
 
 class TrashScreen extends ConsumerWidget {

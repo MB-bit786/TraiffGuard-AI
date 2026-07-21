@@ -18,7 +18,8 @@ class AppConstants {
   static const List<String> mainCountries = [
     'China', 'United States', 'India', 'Germany', 'Japan', 
     'Vietnam', 'Mexico', 'United Kingdom', 'France', 'Canada', 
-    'Netherlands', 'Singapore', 'Italy', 'South Korea', 'Brazil'
+    'Netherlands', 'Singapore', 'Italy', 'South Korea', 'Brazil',
+    'United Arab Emirates', 'Saudi Arabia', 'Qatar', 'Oman', 'Kuwait', 'Jordan'
   ];
 
   static const Map<String, List<String>> countryPorts = {
@@ -37,6 +38,12 @@ class AppConstants {
     'Italy': ['Genoa', 'Trieste', 'Gioia Tauro'],
     'South Korea': ['Busan', 'Incheon', 'Gwangyang'],
     'Brazil': ['Santos', 'Itajai', 'Paranagua'],
+    'United Arab Emirates': ['Jebel Ali (Dubai)', 'Khalifa Port (Abu Dhabi)', 'Port Rashid'],
+    'Saudi Arabia': ['Jeddah Islamic Port', 'King Abdulaziz Port (Dammam)', 'King Abdullah Port'],
+    'Qatar': ['Hamad Port'],
+    'Oman': ['Port of Salalah', 'Sohar Port', 'Port of Duqm'],
+    'Kuwait': ['Shuwaikh Port', 'Shuaiba Port'],
+    'Jordan': ['Port of Aqaba'],
   };
 
   static final RegExp invoiceNumberRegex = RegExp(r'^INV-\d{4}-\d{1,10}$', caseSensitive: false);

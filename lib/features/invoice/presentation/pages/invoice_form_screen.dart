@@ -125,7 +125,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       }
 
       if (state.result != null) {
-        context.pushReplacement(AppRoutes.auditResultPath(state.result!.invoiceNumber));
+        context.push(AppRoutes.auditResultPath(state.result!.invoiceNumber));
       } else {
         context.pop();
       }
@@ -769,6 +769,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DropdownButtonFormField<String>(
+      isExpanded: true,
       initialValue: initialValue,
       dropdownColor: isDark ? TariffColors.navyMid : Colors.white,
       style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 14, fontWeight: FontWeight.w500),

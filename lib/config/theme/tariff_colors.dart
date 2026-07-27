@@ -56,8 +56,8 @@ class TariffColors {
   }
 
   static Color text(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark 
-        ? textPrimary 
+    return Theme.of(context).brightness == Brightness.dark
+        ? textPrimary
         : Colors.black87;
   }
 

@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hscode_auditor/core/constants/db_constants.dart';
 
-/// Standard Mobile SQL Service using native sqflite.
 class SqlDatabaseService {
   Database? _database;
 

@@ -3,14 +3,12 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Principal AI Systems Service for high-fidelity structured customs audit extraction.
-/// Implements persistent node-hopping and environment-secured credentials.
 class GeminiAuditService {
   final GenerativeModel _primaryNode;
   final GenerativeModel _fallbackNode;
   bool _useFallback = false;
 
-  // High-performance model targets
+  //  model
   static const String _primaryModelName = 'gemini-3.5-flash';
   static const String _fallbackModelName = 'gemini-2.5-flash';
 
@@ -18,7 +16,7 @@ class GeminiAuditService {
       : _primaryNode = _createModel(_primaryModelName),
         _fallbackNode = _createModel(_fallbackModelName);
 
-  /// Resolved active model reference based on current node health status.
+  /// current node status check.
   GenerativeModel get _activeModel => _useFallback ? _fallbackNode : _primaryNode;
 
   static GenerativeModel _createModel(String modelName) {

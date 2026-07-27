@@ -33,8 +33,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
     if (userCredential.user != null) {
       final String uid = userCredential.user!.uid;
-      await userCredential.user?.updateDisplayName(fullName);
-
+      await userCredential.user?.updateDisplayName(fullName);         //null-aware
       await _firestore.collection('users').doc(uid).set({
         'fullName': fullName,
         'email': email.trim(),

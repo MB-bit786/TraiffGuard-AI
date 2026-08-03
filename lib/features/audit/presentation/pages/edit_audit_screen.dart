@@ -148,7 +148,7 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
       // 1. Create a "High-Fidelity Draft" model with user's manual changes.
       // We set confidenceScore to 0 to trigger the background AutoSyncService.
       final manualDraft = HsAuditResultModel(
-        hsCode: _selectedHsCode != null ? '$_selectedHsCode (Offline Draft)' : 'PENDING (Offline Draft)',
+        hsCode: _selectedHsCode != null ? '$_selectedHsCode (Offline Draft)' : 'PENDING',
         userId: userId,
         hsDescription: 'Local manual update (Analysis Pending...)',
         chapter: (_selectedHsCode != null && _selectedHsCode!.length >= 2) 
@@ -456,6 +456,7 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
       ),
     );
   }
+
 
   Widget _buildPortField({
     required TextEditingController controller,

@@ -122,6 +122,14 @@ class AuthUseCases {
               DbConstants.colPlannedMonth: data['plannedMonth'] ?? 'January',
               DbConstants.colShippingMethod: data['shippingMethod'] ?? 'Sea Freight',
               DbConstants.colIsDeleted: data['isDeleted'] ?? 0,
+              DbConstants.colSyncAttempts: data['syncAttempts'] ?? 0,
+              DbConstants.colNationalExtensionCode: data['nationalExtensionCode'] ?? '',
+              DbConstants.colNationalExtensionDescription: data['nationalExtensionDescription'] ?? '',
+              DbConstants.colOriginPort: data['originPort'] ?? '',
+              DbConstants.colDestinationPort: data['destinationPort'] ?? '',
+              DbConstants.colPortCharges: data['portCharges'] is List 
+                  ? json.encode(data['portCharges']) 
+                  : (data['portCharges'] ?? '[]'),
             },
             conflictAlgorithm: ConflictAlgorithm.replace,
           );

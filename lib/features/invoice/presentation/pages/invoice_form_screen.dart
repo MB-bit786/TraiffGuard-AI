@@ -125,7 +125,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       }
 
       if (state.result != null) {
-        context.push(AppRoutes.auditResultPath(state.result!.invoiceNumber));
+        context.pushReplacement(AppRoutes.auditResultPath(state.result!.invoiceNumber));
       } else {
         context.pop();
       }

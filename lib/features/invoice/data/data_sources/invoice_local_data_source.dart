@@ -179,7 +179,7 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
     await hardDeleteInvoice(id, userId);
   }
 
-  @override
+  @override // this method is called when user opens an invoice to see the ai audit result
   Future<HsAuditResultModel?> getAuditResult(String id, String userId) async {
     final db = await _dbService.database;
     final maps = await db.query(

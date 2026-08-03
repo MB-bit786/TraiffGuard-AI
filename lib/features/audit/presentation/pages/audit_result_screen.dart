@@ -72,7 +72,7 @@ class AuditResultScreen extends ConsumerWidget {
         backgroundColor: isDark ? TariffColors.navyMid : const Color(0xFF1565C0),
         elevation: 0,
         leading: IconButton(
-          onPressed: () => context.pop(),
+          onPressed: () => context.push(AppRoutes.dashboard),
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
         ),
       ),
@@ -130,6 +130,8 @@ class AuditResultScreen extends ConsumerWidget {
           Text(
             'CUSTOMS CLASSIFICATION REPORT',
             style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.8),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -185,13 +187,19 @@ class AuditResultScreen extends ConsumerWidget {
           color: isDark ? TariffColors.navyMid : Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: isDark ? const BorderSide(color: TariffColors.cardBorder) : BorderSide(color: Colors.grey[200]!)),
           itemBuilder: (context) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete',
               child: Row(
                 children: [
-                  Icon(Icons.delete_outline_rounded, color: TariffColors.crimsonRisk, size: 18),
-                  SizedBox(width: 8),
-                  Text('Delete Audit', style: TextStyle(color: TariffColors.crimsonRisk)),
+                  const Icon(Icons.delete_outline_rounded, color: TariffColors.crimsonRisk, size: 18),
+                  const SizedBox(width: 8),
+                  const Flexible(
+                    child: Text(
+                      'Delete Audit', 
+                      style: TextStyle(color: TariffColors.crimsonRisk),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -250,43 +258,95 @@ class AuditResultScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         color: isDark ? TariffColors.navySurface : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: TariffColors.amberPending.withValues(alpha: 0.4), width: 1.5),
+        border: Border.all(color: isDark ? TariffColors.navyElevated : Colors.grey[300]!, width: 1),
       ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Row(
-            children: [
-              const Icon(Icons.flag_rounded, color: TariffColors.amberPending, size: 18),
-              const SizedBox(width: 8),
-              const Text(
-                'NATIONAL TARIFF EXTENSION',
-                style: TextStyle(color: TariffColors.amberPending, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            result.nationalExtensionCode,
-            style: TextStyle(
-              color: isDark ? TariffColors.textPrimary : Colors.black87,
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              fontFamily: 'monospace',
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            result.nationalExtensionDescription,
-            style: TextStyle(
-              color: isDark ? TariffColors.textSecondary : Colors.black54,
-              fontSize: 13,
-              height: 1.4,
-              fontStyle: FontStyle.italic,
+          Positioned.fill(child: ClipRRect(borderRadius: BorderRadius.circular(16), child: CustomPaint(painter: _GridPainter(isDark: isDark)))),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: isDark ? TariffColors.amberPendingSoft : Colors.amber[50], 
+                          borderRadius: BorderRadius.circular(6), 
+                          border: Border.all(color: isDark ? TariffColors.amberPendingBorder : Colors.amber[200]!, width: 1)
+                        ),
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 5,
+                          children: [
+                            const Icon(Icons.flag_rounded, size: 12, color: TariffColors.amberPending),
+                            const Text(
+                              'NATIONAL EXTENSION', 
+                              style: TextStyle(color: TariffColors.amberPending, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.0),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: result.nationalExtensionCode));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('National HS Code copied'), 
+                            behavior: SnackBarBehavior.floating, 
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+                          )
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: isDark ? TariffColors.navyElevated : Colors.grey[200], borderRadius: BorderRadius.circular(8)),
+                        child: Icon(Icons.copy_rounded, size: 16, color: isDark ? TariffColors.textSecondary : Colors.blueGrey),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Text('NATIONAL HS CODE', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[500], fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 2.5)),
+                const SizedBox(height: 6),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    result.nationalExtensionCode,
+                    style: TextStyle(
+                      color: isDark ? TariffColors.textPrimary : Colors.black87,
+                      fontSize: 42,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'monospace',
+                      letterSpacing: -0.5,
+                      height: 1.0,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Container(height: 1, color: isDark ? TariffColors.divider : Colors.grey[300]),
+                const SizedBox(height: 14),
+                Text(
+                  result.nationalExtensionDescription,
+                  style: TextStyle(
+                    color: isDark ? TariffColors.textSecondary : Colors.black87,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -317,7 +377,12 @@ class AuditResultScreen extends ConsumerWidget {
                   children: [
                     const Text('DEPARTURE PORT', style: TextStyle(color: TariffColors.textMuted, fontSize: 9, fontWeight: FontWeight.w800)),
                     const SizedBox(height: 4),
-                    Text(origin, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 14)),
+                    Text(
+                      origin, 
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
@@ -331,7 +396,13 @@ class AuditResultScreen extends ConsumerWidget {
                   children: [
                     const Text('ARRIVAL PORT', style: TextStyle(color: TariffColors.textMuted, fontSize: 9, fontWeight: FontWeight.w800)),
                     const SizedBox(height: 4),
-                    Text(dest, textAlign: TextAlign.right, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 14)),
+                    Text(
+                      dest, 
+                      textAlign: TextAlign.right, 
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
@@ -341,9 +412,11 @@ class AuditResultScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildMiniMeta('SHIPPING', result.shippingMethod),
-              _buildMiniMeta('WEIGHT', '${result.totalWeightKg} KG'),
-              _buildMiniMeta('ENTRY', result.plannedMonth),
+              Expanded(child: _buildMiniMeta('SHIPPING', result.shippingMethod)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildMiniMeta('WEIGHT', '${result.totalWeightKg} KG')),
+              const SizedBox(width: 8),
+              Expanded(child: _buildMiniMeta('ENTRY', result.plannedMonth)),
             ],
           ),
         ],
@@ -355,9 +428,9 @@ class AuditResultScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: TariffColors.textMuted, fontSize: 8, fontWeight: FontWeight.w700)),
+        Text(label, style: const TextStyle(color: TariffColors.textMuted, fontSize: 8, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
         const SizedBox(height: 2),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
       ],
     );
   }
@@ -381,9 +454,12 @@ class AuditResultScreen extends ConsumerWidget {
               children: [
                 Icon(Icons.anchor_rounded, size: 16, color: TariffColors.textMuted),
                 SizedBox(width: 8),
-                Text(
-                  'PORT HANDLING \u0026 SURCHARGES',
-                  style: TextStyle(color: TariffColors.textMuted, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.5),
+                Flexible(
+                  child: Text(
+                    'PORT HANDLING \u0026 SURCHARGES',
+                    style: TextStyle(color: TariffColors.textMuted, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.5),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -397,14 +473,22 @@ class AuditResultScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
+                      flex: 2,
                       child: Text(
                         charge['chargeName'] ?? 'Unknown Handling',
                         style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Text(
-                      '${charge['currency']} ${charge['amount']}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace'),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 1,
+                      child: Text(
+                        '${charge['currency']} ${charge['amount']}',
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace'),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
@@ -434,23 +518,31 @@ class AuditResultScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: isDark ? TariffColors.greenVerifiedSoft : Colors.green[50], 
-                        borderRadius: BorderRadius.circular(6), 
-                        border: Border.all(color: isDark ? TariffColors.greenVerifiedBorder : Colors.green[200]!, width: 1)
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.auto_awesome_rounded, size: 12, color: TariffColors.greenVerified),
-                          SizedBox(width: 5),
-                          Text('AI CLASSIFIED', style: TextStyle(color: TariffColors.greenVerified, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.0)),
-                        ],
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: isDark ? TariffColors.greenVerifiedSoft : Colors.green[50], 
+                          borderRadius: BorderRadius.circular(6), 
+                          border: Border.all(color: isDark ? TariffColors.greenVerifiedBorder : Colors.green[200]!, width: 1)
+                        ),
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 5,
+                          children: [
+                            const Icon(Icons.auto_awesome_rounded, size: 12, color: TariffColors.greenVerified),
+                            const Text(
+                              'AI CLASSIFIED', 
+                              style: TextStyle(color: TariffColors.greenVerified, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.0),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 12),
                     GestureDetector(
                       onTap: () {
                         Clipboard.setData(ClipboardData(text: result.hsCode));
@@ -473,12 +565,27 @@ class AuditResultScreen extends ConsumerWidget {
                 const SizedBox(height: 20),
                 Text('HS CODE (UNIVERSAL)', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[500], fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 2.5)),
                 const SizedBox(height: 6),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.end,
+                  spacing: 12,
+                  runSpacing: 8,
                   children: [
-                    Text(result.hsCode, style: TextStyle(color: isDark ? TariffColors.textPrimary : Colors.black87, fontSize: 52, fontWeight: FontWeight.w900, letterSpacing: -1.0, fontFamily: 'monospace', height: 1.0)),
-                    if (result.nationalExtensionCode.isNotEmpty) ...[
-                      const SizedBox(width: 12),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.bottomLeft,
+                      child: Text(
+                        result.hsCode, 
+                        style: TextStyle(
+                          color: isDark ? TariffColors.textPrimary : Colors.black87, 
+                          fontSize: 52, 
+                          fontWeight: FontWeight.w900, 
+                          letterSpacing: -1.0, 
+                          fontFamily: 'monospace', 
+                          height: 1.0
+                        ),
+                      ),
+                    ),
+                    if (result.nationalExtensionCode.isNotEmpty)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         margin: const EdgeInsets.only(bottom: 4),
@@ -492,7 +599,6 @@ class AuditResultScreen extends ConsumerWidget {
                           style: TextStyle(color: TariffColors.amberPending, fontSize: 9, fontWeight: FontWeight.w900),
                         ),
                       ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -525,7 +631,19 @@ class AuditResultScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('AI CLASSIFICATION CONFIDENCE', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+              Expanded(
+                child: Text(
+                  'AI CLASSIFICATION CONFIDENCE', 
+                  style: TextStyle(
+                    color: isDark ? TariffColors.textMuted : Colors.grey[600], 
+                    fontSize: 10, 
+                    fontWeight: FontWeight.w700, 
+                    letterSpacing: 1.5
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
               Text('$score%', style: TextStyle(color: barColor, fontSize: 15, fontWeight: FontWeight.w800)),
             ],
           ),
@@ -557,7 +675,13 @@ class AuditResultScreen extends ConsumerWidget {
               children: [
                 const Icon(Icons.percent_rounded, size: 16, color: TariffColors.amberPending),
                 const SizedBox(width: 8),
-                Text('TARIFF & DUTY BREAKDOWN', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.8)),
+                Flexible(
+                  child: Text(
+                    'TARIFF & DUTY BREAKDOWN', 
+                    style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.8),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
           ),
@@ -573,7 +697,7 @@ class AuditResultScreen extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Flexible(child: Text('TOTAL TAX BURDEN', style: TextStyle(color: TariffColors.amberPending, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2), overflow: TextOverflow.ellipsis)),
+                Expanded(child: Text('TOTAL TAX BURDEN', style: TextStyle(color: TariffColors.amberPending, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2), overflow: TextOverflow.ellipsis)),
                 const SizedBox(width: 8),
                 Flexible(child: Text(result.totalTaxBurden, textAlign: TextAlign.right, style: const TextStyle(color: TariffColors.amberPending, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5), overflow: TextOverflow.ellipsis)),
               ],
@@ -636,7 +760,7 @@ class AuditResultScreen extends ConsumerWidget {
                           fontSize: 13, 
                           height: 1.5, 
                           fontWeight: FontWeight.w500
-                        )
+                        ),
                       ),
                     ),
                   ],
@@ -675,13 +799,15 @@ class AuditResultScreen extends ConsumerWidget {
                   child: const Icon(Icons.description_outlined, size: 20, color: docAccent)
                 ),
                 const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('REQUIRED DOCUMENTATION', style: TextStyle(color: docAccent, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
-                    const SizedBox(height: 2),
-                    Text('MANDATORY CLEARANCE PROTOCOLS', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('REQUIRED DOCUMENTATION', style: TextStyle(color: docAccent, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
+                      const SizedBox(height: 2),
+                      Text('MANDATORY CLEARANCE PROTOCOLS', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5), overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -704,7 +830,7 @@ class AuditResultScreen extends ConsumerWidget {
                           fontSize: 13, 
                           fontWeight: FontWeight.w500, 
                           height: 1.4
-                        )
+                        ),
                       )
                     ),
                   ],
@@ -729,7 +855,13 @@ class AuditResultScreen extends ConsumerWidget {
               children: [
                 Icon(Icons.receipt_long_rounded, size: 16, color: isDark ? TariffColors.textMuted : Colors.grey[500]),
                 const SizedBox(width: 8),
-                Text('AUDIT METADATA', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.8)),
+                const Flexible(
+                  child: Text(
+                    'AUDIT METADATA', 
+                    style: TextStyle(color: TariffColors.textMuted, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.8),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
           ),
@@ -801,7 +933,8 @@ class AuditResultScreen extends ConsumerWidget {
               icon: const Icon(Icons.picture_as_pdf_rounded, size: 20), 
               label: const Text(
                 'EXPORT AUDIT REPORT (PDF)', 
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.0)
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.0),
+                overflow: TextOverflow.ellipsis,
               )
             )
           ),

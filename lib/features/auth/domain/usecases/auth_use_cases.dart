@@ -130,6 +130,10 @@ class AuthUseCases {
               DbConstants.colPortCharges: data['portCharges'] is List 
                   ? json.encode(data['portCharges']) 
                   : (data['portCharges'] ?? '[]'),
+              DbConstants.colVerificationStatus: data['verificationStatus'] ?? 'unverified',
+              DbConstants.colHsDescriptionOfficial: data['hsDescriptionOfficial'] ?? '',
+              DbConstants.colUpdatedAt: data['updatedAt'] ?? data['updated_at'] ?? '',
+              DbConstants.colPromptVersion: data['promptVersion'] ?? data['prompt_version'] ?? 0,
             },
             conflictAlgorithm: ConflictAlgorithm.replace,
           );

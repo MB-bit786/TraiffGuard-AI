@@ -47,6 +47,7 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
         DbConstants.colStatus: invoice.status,
         DbConstants.colTimestamp: invoice.timestamp,
         DbConstants.colIsDeleted: invoice.isDeleted ? 1 : 0,
+        DbConstants.colUpdatedAt: invoice.updatedAt,
       };
 
       if (existing.isNotEmpty) {
@@ -103,6 +104,10 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
         DbConstants.colOriginPort: result.originPort,
         DbConstants.colDestinationPort: result.destinationPort,
         DbConstants.colPortCharges: json.encode(result.portCharges),
+        DbConstants.colPromptVersion: result.promptVersion,
+        DbConstants.colVerificationStatus: result.verificationStatus.name,
+        DbConstants.colHsDescriptionOfficial: result.hsDescriptionOfficial,
+        DbConstants.colUpdatedAt: result.updatedAt,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -202,6 +207,7 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
       status: map[DbConstants.colStatus] as String? ?? '',
       timestamp: map[DbConstants.colTimestamp] as String? ?? '',
       isDeleted: (map[DbConstants.colIsDeleted] as int? ?? 0) == 1,
+      updatedAt: map[DbConstants.colUpdatedAt] as String? ?? '',
     );
   }
 
@@ -236,6 +242,10 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
       nationalExtensionDescription: map[DbConstants.colNationalExtensionDescription] as String? ?? '',
       originPort: map[DbConstants.colOriginPort] as String? ?? '',
       destinationPort: map[DbConstants.colDestinationPort] as String? ?? '',
+      promptVersion: map[DbConstants.colPromptVersion] as int? ?? 0,
+      verificationStatus: HsAuditResultModel.parseVerificationStatus(map[DbConstants.colVerificationStatus]),
+      hsDescriptionOfficial: map[DbConstants.colHsDescriptionOfficial] as String? ?? '',
+      updatedAt: map[DbConstants.colUpdatedAt] as String? ?? '',
       portCharges: (map[DbConstants.colPortCharges] is String) 
           ? List<Map<String, String>>.from((json.decode(map[DbConstants.colPortCharges] as String) as List)
               .map((e) => Map<String, String>.from(e as Map)))

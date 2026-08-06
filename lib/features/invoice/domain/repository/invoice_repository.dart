@@ -22,6 +22,8 @@ abstract class InvoiceRepository {
   
   Future<List<Map<String, dynamic>>> searchTariffMaster(String query);
 
+  Future<Map<String, dynamic>?> findTariffByCode(String rawCode);
+
   /// Manually triggers a broadcast of the invoice list for the given user.
   void notifyChanges(String userId);
 }

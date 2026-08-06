@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hscode_auditor/core/constants/app_constants.dart';
 
 class GeminiAuditService {
   final GenerativeModel _primaryNode;
@@ -9,8 +10,8 @@ class GeminiAuditService {
   bool _useFallback = false;
 
   //  model
-  static const String _primaryModelName = 'gemini-3.5-flash';
-  static const String _fallbackModelName = 'gemini-2.5-flash';
+  static const String _primaryModelName = 'gemini-flash-latest';
+  static const String _fallbackModelName = 'gemini-3.1-flash-lite';
 
   GeminiAuditService()
       : _primaryNode = _createModel(_primaryModelName),
@@ -76,58 +77,18 @@ class GeminiAuditService {
     required String originPort,
     required String destinationPort,
   }) async {
-    final prompt = '''
-      Act as an expert World Customs Organization (WCO) customs auditor. 
-      Analyze the following shipment parameters to provide a high-fidelity classification and risk report:
-      - Cargo Description: "$cargoDescription"
-      - Suggested/Initial HS Code: "$hsCode"
-      - Origin Country (Made in): "$originCountry"
-      - Destination Country (Importing to): "$destinationCountry"
-      - Origin Port (Departure): "$originPort"
-      - Destination Port (Arrival): "$destinationPort"
-      - Declared Value: $declaredValue
-      - Currency: "$currency"
-      - Total Weight: $totalWeightKg kg
-      - Planned Month of Entry: $plannedMonth
-      - Shipping Method: $shippingMethod
-
-      CRITICAL INPUT VALIDATION GUARDRAIL: Before executing any customs analysis, evaluate if the input description is a valid commercial product or cargo description. If the description contains conversational chatter (e.g., 'how are you', 'tell me a joke'), personal names, greeting strings, or non-shipping text, you must immediately halt analysis. In this scenario, return a valid JSON map matching our schema where 'confidenceScore' is strictly set to 0, 'riskLevel' is set to 'INVALID_INPUT', and 'complianceWarnings' contains the exact string: 'ERROR: The description provided does not contain a recognizable commercial commodity or cargo type. Please enter a valid item name (e.g., Mangoes, Textiles, Electronics) to proceed.'
-
-      Instructions:
-      1. Validate or correct the 6-digit HS Code based on the description.
-      2. Determine the country-specific national suffix extension (e.g. HTSUS for US, TARIC for EU, ITC-HS for India) based on the destination country. Provide both the code (8, 10, or 12 digits) and its specific tariff description.
-      3. Identify the relevant HS Chapter (e.g., 'Chapter 85 — Electrical Machinery').
-      4. Estimate the Standard Import Duty rate for this commodity based on the Destination Country and Origin.
-      5. Estimate the VAT / GST rate applicable for this shipment in the Destination Country.
-      6. Calculate the Estimated Duty Payable amount based on the Declared Value and Currency.
-      7. Parse local seaport transit dues, security fees, and Terminal Handling Charges (THC) between "$originPort" and "$destinationPort".
-      8. Calculate the Total Tax Burden percentage (Duty + VAT).
-      9. Calculate a Confidence Score (1 to 100) for this classification. 
-      10. Identify critical Compliance Warnings (e.g., Hazmat, Sanctions, CITES, Licensing).
-      11. List the Required Documents for customs clearance.
-
-      You must return ONLY a raw, minified, valid JSON object matching the structure below. No conversational text, no markdown code blocks.
-      
-      JSON Structure:
-      {
-        "hsCode": "string (6-digit universal)",
-        "nationalExtensionCode": "string (full national code)",
-        "nationalExtensionDescription": "string (detailed national tariff text)",
-        "hsDescription": "string (universal description)",
-        "chapter": "string",
-        "dutyRate": "string",
-        "vatRate": "string",
-        "estimatedDutyAmount": "string (numeric)",
-        "totalTaxBurden": "string",
-        "confidenceScore": integer,
-        "riskLevel": "string",
-        "complianceWarnings": ["string"],
-        "requiredDocuments": ["string"],
-        "originPort": "string",
-        "destinationPort": "string",
-        "portCharges": [{"chargeName": "string", "amount": "string", "currency": "string"}]
-      }
-    ''';
+    final prompt = AppConstants.kClassificationPromptTemplate
+        .replaceAll('{cargoDescription}', cargoDescription)
+        .replaceAll('{hsCode}', hsCode)
+        .replaceAll('{originCountry}', originCountry)
+        .replaceAll('{destinationCountry}', destinationCountry)
+        .replaceAll('{originPort}', originPort)
+        .replaceAll('{destinationPort}', destinationPort)
+        .replaceAll('{declaredValue}', declaredValue.toString())
+        .replaceAll('{currency}', currency)
+        .replaceAll('{totalWeightKg}', totalWeightKg)
+        .replaceAll('{plannedMonth}', plannedMonth)
+        .replaceAll('{shippingMethod}', shippingMethod);
 
     const int maxAttempts = 5;
 
@@ -159,13 +120,16 @@ class GeminiAuditService {
           rethrow;
         }
 
-        // Capacity check for 503/429
-        final bool isRetryable = errorStr.contains('503') ||
-            errorStr.contains('overloaded') ||
-            errorStr.contains('exhausted') ||
-            errorStr.contains('429');
+        // Capacity check: 503 is server overload (retryable), 429/exhausted is quota (NOT retryable on free tier)
+        final bool isQuotaExceeded = errorStr.contains('exhausted') || errorStr.contains('429') || errorStr.contains('quota');
+        final bool isServerOverload = errorStr.contains('503') || errorStr.contains('overloaded');
 
-        if (isRetryable) {
+        if (isQuotaExceeded) {
+          debugPrint('[GEMINI] Quota Exceeded. Stopping attempts to save pipeline.');
+          throw Exception('AI Quota Exceeded. Please try again in a few minutes.');
+        }
+
+        if (isServerOverload) {
           // Node-Hopping: Switch to the high-availability node after 2 failures
           if (attempt == 2 && !_useFallback) {
             debugPrint('[GEMINI] Node Congestion. Hopping to High-Availability node: $_fallbackModelName');

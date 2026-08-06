@@ -2,14 +2,16 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
 import 'package:hscode_auditor/features/invoice/domain/repository/invoice_repository.dart';
 import 'package:hscode_auditor/core/services/gemini_audit_service.dart';
 import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
-import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
 import 'package:hscode_auditor/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hscode_auditor/core/constants/db_constants.dart';
+import 'package:hscode_auditor/core/constants/app_constants.dart';
 
 /// Principal Background Service for cargo manifest synchronization.
 /// Handles network state changes, heartbeats, and database reconciliation.
@@ -74,8 +76,15 @@ class AutoSyncService {
 
       debugPrint('[SYNC] Processing ${pendingDrafts.length} pending manifest(s)...');
       int successCount = 0;
+      int processedCount = 0;
 
       for (final draft in pendingDrafts) {
+        if (processedCount >= 10) {
+          debugPrint('[SYNC] Batch limit reached (10). Pausing until next cycle to respect AI quota.');
+          break;
+        }
+        processedCount++;
+        
         // Pre-flight check: Is the data "proper" enough for AI?
         final String desc = draft.cargoDescription.trim().toLowerCase();
         final bool isConversational = desc.contains('?') || desc.contains('how are') || desc.startsWith('hi') || desc.startsWith('hello');
@@ -104,10 +113,23 @@ class AutoSyncService {
 
           final Map<String, dynamic> aiData = json.decode(jsonResponse);
 
+          final String aiHsCode = aiData['hsCode']?.toString() ?? draft.hsCode;
+          final tariffEntry = await _repository.findTariffByCode(aiHsCode);
+
+          VerificationStatus vStatus = VerificationStatus.unverified;
+          String officialDescription = '';
+
+          if (tariffEntry != null) {
+            officialDescription = tariffEntry[DbConstants.colDescription] ?? '';
+            vStatus = VerificationStatus.verified;
+          }
+
           final upgradedResult = HsAuditResultEntity(
-            hsCode: aiData['hsCode']?.toString() ?? draft.hsCode,
+            hsCode: aiHsCode,
             userId: userId,
             hsDescription: aiData['hsDescription']?.toString() ?? draft.hsDescription,
+            hsDescriptionOfficial: officialDescription,
+            verificationStatus: vStatus,
             chapter: aiData['chapter']?.toString() ?? draft.chapter,
             consignee: draft.consignee,
             invoiceNumber: draft.invoiceNumber,
@@ -126,17 +148,23 @@ class AutoSyncService {
                 ? ((aiData['confidenceScore'] as num) * 100).toInt()
                 : (aiData['confidenceScore'] as num).toInt())
                 : 0,
-            riskLevel: aiData['riskLevel'] != null
-                ? _parseRiskLevel(aiData['riskLevel'].toString())
-                : RiskLevel.medium,
+            riskLevel: (aiData['complianceWarnings'] != null && (aiData['complianceWarnings'] as List).isNotEmpty)
+                ? RiskLevel.medium
+                : aiData['riskLevel'] != null
+                    ? _parseRiskLevel(aiData['riskLevel'].toString())
+                    : (aiData['confidenceScore'] is num && ((aiData['confidenceScore'] as num) > 80 || (aiData['confidenceScore'] as num) > 0.8))
+                        ? RiskLevel.low
+                        : RiskLevel.medium,
             status: 'synced',
             auditTimestamp: DateTime.now().toString().split('.').first,
+            updatedAt: DateTime.now().toIso8601String(),
             originCountry: draft.originCountry,
             destinationCountry: draft.destinationCountry,
             totalWeightKg: draft.totalWeightKg,
             plannedMonth: draft.plannedMonth,
             shippingMethod: draft.shippingMethod,
             isDeleted: draft.isDeleted,
+            promptVersion: AppConstants.kPromptVersion,
             complianceWarnings: List<String>.from(aiData['complianceWarnings'] ?? []),
             requiredDocuments: List<String>.from(aiData['requiredDocuments'] ?? []),
             nationalExtensionCode: aiData['nationalExtensionCode']?.toString() ?? '',

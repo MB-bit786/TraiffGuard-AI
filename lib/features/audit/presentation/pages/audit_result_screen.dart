@@ -130,8 +130,6 @@ class AuditResultScreen extends ConsumerWidget {
           Text(
             'CUSTOMS CLASSIFICATION REPORT',
             style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.8),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -428,9 +426,9 @@ class AuditResultScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: TariffColors.textMuted, fontSize: 8, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+        Text(label, style: const TextStyle(color: TariffColors.textMuted, fontSize: 8, fontWeight: FontWeight.w700)),
         const SizedBox(height: 2),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
       ],
     );
   }
@@ -477,7 +475,6 @@ class AuditResultScreen extends ConsumerWidget {
                       child: Text(
                         charge['chargeName'] ?? 'Unknown Handling',
                         style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.black54, fontSize: 12),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -487,7 +484,6 @@ class AuditResultScreen extends ConsumerWidget {
                         '${charge['currency']} ${charge['amount']}',
                         textAlign: TextAlign.right,
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace'),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -521,26 +517,7 @@ class AuditResultScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: isDark ? TariffColors.greenVerifiedSoft : Colors.green[50], 
-                          borderRadius: BorderRadius.circular(6), 
-                          border: Border.all(color: isDark ? TariffColors.greenVerifiedBorder : Colors.green[200]!, width: 1)
-                        ),
-                        child: Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 5,
-                          children: [
-                            const Icon(Icons.auto_awesome_rounded, size: 12, color: TariffColors.greenVerified),
-                            const Text(
-                              'AI CLASSIFIED', 
-                              style: TextStyle(color: TariffColors.greenVerified, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.0),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
+                      child: _buildVerificationBadge(context, result),
                     ),
                     const SizedBox(width: 12),
                     GestureDetector(
@@ -602,7 +579,18 @@ class AuditResultScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(result.hsDescription, style: const TextStyle(color: TariffColors.amberPending, fontSize: 16, fontWeight: FontWeight.w600)),
+                if (result.verificationStatus == VerificationStatus.verified) ...[
+                  Text(result.hsDescriptionOfficial, style: const TextStyle(color: TariffColors.greenVerified, fontSize: 16, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text('Official Tariff Nomenclature', style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.grey[600], fontSize: 11, fontStyle: FontStyle.italic)),
+                ] else ...[
+                  Text(result.hsDescription, style: const TextStyle(color: TariffColors.amberPending, fontSize: 16, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'AI Predicted Classification', 
+                    style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.grey[600], fontSize: 11, fontStyle: FontStyle.italic)
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Text(result.chapter, style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.grey[700], fontSize: 12, fontWeight: FontWeight.w400)),
                 const SizedBox(height: 18),
@@ -617,10 +605,72 @@ class AuditResultScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildVerificationBadge(BuildContext context, HsAuditResultEntity result) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    Color bgColor;
+    Color borderColor;
+    Color textColor;
+    String label;
+    IconData icon;
+
+    if (result.status == 'offlineDraft') {
+        bgColor = isDark ? TariffColors.amberPendingSoft : Colors.amber[50]!;
+        borderColor = isDark ? TariffColors.amberPendingBorder : Colors.amber[200]!;
+        textColor = TariffColors.amberPending;
+        label = 'PENDING SYNC';
+        icon = Icons.cloud_sync_rounded;
+    } else {
+        switch (result.verificationStatus) {
+          case VerificationStatus.verified:
+            bgColor = isDark ? TariffColors.greenVerifiedSoft : Colors.green[50]!;
+            borderColor = isDark ? TariffColors.greenVerifiedBorder : Colors.green[200]!;
+            textColor = TariffColors.greenVerified;
+            label = 'VERIFIED';
+            icon = Icons.verified_user_rounded;
+            break;
+          case VerificationStatus.unverified:
+            bgColor = isDark ? TariffColors.amberPendingSoft : Colors.amber[50]!;
+            borderColor = isDark ? TariffColors.amberPendingBorder : Colors.amber[200]!;
+            textColor = TariffColors.amberPending;
+            label = 'UNVERIFIED';
+            icon = Icons.help_outline_rounded;
+            break;
+        }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 5,
+        children: [
+          Icon(icon, size: 12, color: textColor),
+          Text(
+            label,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildConfidenceBar(BuildContext context, HsAuditResultEntity result) {
     final score = result.confidenceScore;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final barColor = score >= 85 ? TariffColors.greenVerified : score >= 65 ? TariffColors.amberPending : TariffColors.crimsonRisk;
+
+    String scoreLabel = score >= 85 ? 'HIGH (SELF-REPORTED)' : score >= 65 ? 'MEDIUM (SELF-REPORTED)' : 'LOW (SELF-REPORTED)';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -633,18 +683,17 @@ class AuditResultScreen extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  'AI CLASSIFICATION CONFIDENCE', 
+                  'MODEL PREDICTION CONFIDENCE', 
                   style: TextStyle(
                     color: isDark ? TariffColors.textMuted : Colors.grey[600], 
                     fontSize: 10, 
                     fontWeight: FontWeight.w700, 
                     letterSpacing: 1.5
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 8),
-              Text('$score%', style: TextStyle(color: barColor, fontSize: 15, fontWeight: FontWeight.w800)),
+              Text(scoreLabel, style: TextStyle(color: barColor, fontSize: 12, fontWeight: FontWeight.w800)),
             ],
           ),
           const SizedBox(height: 10),
@@ -654,7 +703,7 @@ class AuditResultScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            score >= 85 ? 'High confidence — classification validated against WCO nomenclature' : score >= 65 ? 'Medium confidence — manual review recommended before clearance' : 'Low confidence — classification requires human expert review',
+            score >= 85 ? 'Model reports high probability based on description patterns.' : score >= 65 ? 'Model reports moderate probability; manual verification advised.' : 'Model reports low probability; classification may be inaccurate.',
             style: TextStyle(color: barColor.withValues(alpha: 0.8), fontSize: 11.5),
           ),
         ],
@@ -709,10 +758,23 @@ class AuditResultScreen extends ConsumerWidget {
   }
 
   Widget _buildRiskWarningCard(BuildContext context, HsAuditResultEntity result) {
-    if (result.complianceWarnings.isEmpty) return const SizedBox.shrink();
+    final List<String> warnings = List.from(result.complianceWarnings);
+    
+    // UI-level Risk Escalation: If we have compliance warnings, we should not show "SECURE"
+    RiskLevel effectiveRisk = result.riskLevel;
+    if (warnings.isNotEmpty && effectiveRisk == RiskLevel.low) {
+      effectiveRisk = RiskLevel.medium;
+    }
+
+    if (result.verificationStatus == VerificationStatus.unverified) {
+      warnings.insert(0, 'UNVERIFIED: HS Code ${result.hsCode} was not found in the local Master Tariff Database. This classification relies solely on AI prediction — please confirm its validity manually.');
+      if (effectiveRisk == RiskLevel.low) effectiveRisk = RiskLevel.medium;
+    }
+
+    if (warnings.isEmpty) return const SizedBox.shrink();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final visuals = _RiskVisuals.fromLevel(result.riskLevel, isDark);
+    final visuals = _RiskVisuals.fromLevel(effectiveRisk, isDark);
 
     return Container(
       decoration: BoxDecoration(
@@ -742,8 +804,8 @@ class AuditResultScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
-              children: result.complianceWarnings.asMap().entries.map((entry) => Padding(
-                padding: EdgeInsets.only(bottom: entry.key < result.complianceWarnings.length - 1 ? 12 : 0),
+              children: warnings.asMap().entries.map((entry) => Padding(
+                padding: EdgeInsets.only(bottom: entry.key < warnings.length - 1 ? 12 : 0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -805,7 +867,7 @@ class AuditResultScreen extends ConsumerWidget {
                     children: [
                       const Text('REQUIRED DOCUMENTATION', style: TextStyle(color: docAccent, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
                       const SizedBox(height: 2),
-                      Text('MANDATORY CLEARANCE PROTOCOLS', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5), overflow: TextOverflow.ellipsis),
+                      Text('MANDATORY CLEARANCE PROTOCOLS', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[600], fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
                     ],
                   ),
                 ),

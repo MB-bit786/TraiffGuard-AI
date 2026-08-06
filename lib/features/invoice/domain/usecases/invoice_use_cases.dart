@@ -4,6 +4,8 @@ import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_en
 import 'package:hscode_auditor/features/invoice/domain/repository/invoice_repository.dart';
 import 'package:hscode_auditor/core/services/gemini_audit_service.dart';
 import 'package:hscode_auditor/features/auth/domain/usecases/auth_use_cases.dart';
+import 'package:hscode_auditor/core/constants/app_constants.dart';
+import 'package:hscode_auditor/core/constants/db_constants.dart';
 
 class AuditParams {
   final String invoiceNumber;
@@ -87,7 +89,7 @@ class InvoiceUseCases {
     final offlineAuditResult = HsAuditResultEntity(
       hsCode: params.hsCode != null ? '${params.hsCode} (Offline Draft)' : 'PENDING (Offline Draft)',
       userId: params.userId,
-      hsDescription: 'Local corridor-based estimation (Track B Fallback)',
+      hsDescription: 'Awaiting AI Customs Analysis...',
       chapter: activeChapter,
       consignee: params.consignee,
       invoiceNumber: params.invoiceNumber,
@@ -110,10 +112,8 @@ class InvoiceUseCases {
       originPort: params.originPort,
       destinationPort: params.destinationPort,
       isDeleted: false,
-      complianceWarnings: [
-        '⚠️ OFFLINE DRAFT: Live AI tier is currently under high demand.',
-        '⚠️ Local trade matrix applied: ${params.originCountry}_TO_${params.destCountry} corridor.',
-      ],
+      updatedAt: DateTime.now().toIso8601String(),
+      complianceWarnings: [],
       requiredDocuments: ['Commercial Invoice', 'Packing List', 'Certificate of Origin'],
     );
 
@@ -126,6 +126,7 @@ class InvoiceUseCases {
       dutyRate: '${offlineAuditResult.standardDutyRate} (Est)',
       status: 'offlineDraft',
       timestamp: timestamp,
+      updatedAt: offlineAuditResult.updatedAt,
     );
 
     if (!params.effectivelyOnline) {
@@ -150,10 +151,27 @@ class InvoiceUseCases {
 
       final Map<String, dynamic> aiData = json.decode(jsonResponse);
 
+      final String aiHsCode = aiData['hsCode']?.toString() ?? 'UNKNOWN';
+      final tariffEntry = await repository.findTariffByCode(aiHsCode);
+
+      VerificationStatus status = VerificationStatus.unverified;
+      String officialDescription = '';
+
+      if (tariffEntry != null) {
+        officialDescription = tariffEntry[DbConstants.colDescription] ?? '';
+        status = VerificationStatus.verified;
+      }
+
+      final String timestamp = DateTime.now().toString().split('.').first;
+      final String updatedAt = DateTime.now().toIso8601String();
+
       final auditReport = HsAuditResultEntity(
-        hsCode: aiData['hsCode']?.toString() ?? 'UNKNOWN',
+        hsCode: aiHsCode,
         userId: params.userId,
         hsDescription: aiData['hsDescription']?.toString() ?? 'Description not available',
+        hsDescriptionOfficial: officialDescription,
+        verificationStatus: status,
+        updatedAt: updatedAt,
         chapter: aiData['chapter']?.toString() ?? 'WCO Classification Chapter',
         consignee: params.consignee,
         invoiceNumber: params.invoiceNumber,
@@ -172,11 +190,13 @@ class InvoiceUseCases {
                 ? ((aiData['confidenceScore'] as num) * 100).toInt()
                 : (aiData['confidenceScore'] as num).toInt())
             : 0,
-        riskLevel: aiData['riskLevel'] != null
-            ? _parseRiskLevel(aiData['riskLevel'].toString())
-            : (aiData['confidenceScore'] is num && ((aiData['confidenceScore'] as num) > 80 || (aiData['confidenceScore'] as num) > 0.8))
-                ? RiskLevel.low
-                : RiskLevel.medium,
+        riskLevel: (aiData['complianceWarnings'] != null && (aiData['complianceWarnings'] as List).isNotEmpty)
+            ? RiskLevel.medium
+            : aiData['riskLevel'] != null
+                ? _parseRiskLevel(aiData['riskLevel'].toString())
+                : (aiData['confidenceScore'] is num && ((aiData['confidenceScore'] as num) > 80 || (aiData['confidenceScore'] as num) > 0.8))
+                    ? RiskLevel.low
+                    : RiskLevel.medium,
         status: 'synced',
         auditTimestamp: timestamp,
         originCountry: params.originCountry,
@@ -184,6 +204,7 @@ class InvoiceUseCases {
         totalWeightKg: params.totalWeightKg,
         plannedMonth: params.plannedMonth,
         shippingMethod: params.shippingMethod,
+        promptVersion: AppConstants.kPromptVersion,
         complianceWarnings: List<String>.from(aiData['complianceWarnings'] ?? []),
         requiredDocuments: List<String>.from(aiData['requiredDocuments'] ?? []),
         nationalExtensionCode: aiData['nationalExtensionCode']?.toString() ?? '',
@@ -202,6 +223,7 @@ class InvoiceUseCases {
         dutyRate: '${auditReport.standardDutyRate} Duty',
         status: 'synced',
         timestamp: auditReport.auditTimestamp,
+        updatedAt: auditReport.updatedAt,
       );
 
       await repository.cacheInvoiceManifest(syncedManifest, auditResult: auditReport);

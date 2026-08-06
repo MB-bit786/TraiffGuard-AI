@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 import 'package:hscode_auditor/features/invoice/domain/repository/invoice_repository.dart';
@@ -7,6 +8,8 @@ import 'package:hscode_auditor/features/invoice/data/data_sources/invoice_remote
 import 'package:hscode_auditor/features/invoice/data/models/invoice_model.dart';
 import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
 import 'package:hscode_auditor/core/services/sql_database_service.dart';
+import 'package:hscode_auditor/core/constants/app_constants.dart';
+import 'package:hscode_auditor/core/constants/db_constants.dart';
 
 class InvoiceRepositoryImpl implements InvoiceRepository {
   final InvoiceLocalDataSource localDataSource;
@@ -115,6 +118,51 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
   }
 
   @override
+  Future<Map<String, dynamic>?> findTariffByCode(String rawCode) async {
+    final db = await dbService.database;
+    final code = AppConstants.normalizeHsCode(rawCode);
+    
+    debugPrint('[TARIFF] Verifying HS Code: $rawCode (Normalized: $code)');
+
+    if (code.isEmpty) return null;
+    
+    // DEBUG: Check database state for this code
+    final allRows = await db.query('static_hs_codes', where: '${DbConstants.colStaticHsCode} LIKE ?', whereArgs: ['3923%'], limit: 5);
+    debugPrint('[TARIFF] DB Sample for 3923: ${allRows.map((e) => e[DbConstants.colStaticHsCode]).toList()}');
+
+    // 1. Precise match (Ground Truth)
+    final rows = await db.query(
+      'static_hs_codes',
+      where: '${DbConstants.colNormalizedHsCode} = ? OR ${DbConstants.colStaticHsCode} = ?',
+      whereArgs: [code, rawCode.trim()],
+      limit: 1,
+    );
+    
+    if (rows.isNotEmpty) {
+      debugPrint('[TARIFF] Found precise match for: $code');
+      return rows.first;
+    }
+
+    // 2. Fallback: 4-digit Heading match if 6-digit sub-heading is missing
+    if (code.length >= 4) {
+      final heading = code.substring(0, 4);
+      final headingRows = await db.query(
+        'static_hs_codes',
+        where: '${DbConstants.colNormalizedHsCode} LIKE ?',
+        whereArgs: ['$heading%'],
+        limit: 1,
+      );
+      if (headingRows.isNotEmpty) {
+        debugPrint('[TARIFF] Found Heading-level match for: $heading');
+        return headingRows.first;
+      }
+    }
+
+    debugPrint('[TARIFF] No database match found for: $code');
+    return null;
+  }
+
+  @override
   void notifyChanges(String userId) {
     _refreshInvoices(userId);
   }
@@ -146,6 +194,9 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
       plannedMonth: e.plannedMonth,
       shippingMethod: e.shippingMethod,
       isDeleted: e.isDeleted,
+      promptVersion: e.promptVersion,
+      verificationStatus: e.verificationStatus,
+      hsDescriptionOfficial: e.hsDescriptionOfficial,
       nationalExtensionCode: e.nationalExtensionCode,
       nationalExtensionDescription: e.nationalExtensionDescription,
       originPort: e.originPort,
@@ -165,6 +216,7 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
       status: e.status,
       timestamp: e.timestamp,
       isDeleted: e.isDeleted,
+      updatedAt: e.updatedAt,
     );
   }
 }

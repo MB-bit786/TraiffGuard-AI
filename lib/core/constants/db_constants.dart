@@ -32,8 +32,18 @@ class DbConstants {
   static const String colOriginPort = 'originPort';
   static const String colDestinationPort = 'destinationPort';
   static const String colPortCharges = 'portCharges';
+  static const String colPromptVersion = 'promptVersion';
+  static const String colVerificationStatus = 'verificationStatus';
+  static const String colHsDescriptionOfficial = 'hsDescriptionOfficial';
+  static const String colUpdatedAt = 'updated_at';
 
   // Static HS Codes table columns
   static const String colStaticHsCode = 'hs_code';
   static const String colDescription = 'description';
+  static const String colNormalizedHsCode = 'normalized_code';
+  
+  // App Metadata table columns
+  static const String colKey = 'key';
+  static const String colValue = 'value';
+  static const String colDatasetVersion = 'tariff_dataset_version';
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 enum RiskLevel { low, medium, high, invalidInput }
+enum VerificationStatus { verified, unverified }
 
 @immutable
 class HsAuditResultEntity {
@@ -31,6 +32,10 @@ class HsAuditResultEntity {
     this.shippingMethod = 'Sea Freight',
     this.isDeleted = false,
     this.syncAttempts = 0,
+    this.promptVersion = 0,
+    this.verificationStatus = VerificationStatus.unverified,
+    this.hsDescriptionOfficial = '',
+    this.updatedAt = '',
     this.nationalExtensionCode = '',
     this.nationalExtensionDescription = '',
     this.originPort = '',
@@ -64,6 +69,10 @@ class HsAuditResultEntity {
   final String shippingMethod;
   final bool isDeleted;
   final int syncAttempts;
+  final int promptVersion;
+  final VerificationStatus verificationStatus;
+  final String hsDescriptionOfficial;
+  final String updatedAt;
   final String nationalExtensionCode;
   final String nationalExtensionDescription;
   final String originPort;

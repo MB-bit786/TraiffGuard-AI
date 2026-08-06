@@ -15,6 +15,7 @@ class InvoiceEntity {
     required this.timestamp,
     this.isDeleted = false,
     this.syncAttempts = 0,
+    this.updatedAt = '',
   });
 
   final String id;
@@ -27,4 +28,5 @@ class InvoiceEntity {
   final String timestamp;
   final bool isDeleted;
   final int syncAttempts;
+  final String updatedAt;
 }

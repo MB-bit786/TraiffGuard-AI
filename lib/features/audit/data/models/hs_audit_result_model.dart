@@ -29,6 +29,10 @@ class HsAuditResultModel extends HsAuditResultEntity {
     super.shippingMethod = 'Sea Freight',
     super.isDeleted = false,
     super.syncAttempts = 0,
+    super.promptVersion = 0,
+    super.verificationStatus = VerificationStatus.unverified,
+    super.hsDescriptionOfficial = '',
+    super.updatedAt = '',
     super.nationalExtensionCode = '',
     super.nationalExtensionDescription = '',
     super.originPort = '',
@@ -65,6 +69,10 @@ class HsAuditResultModel extends HsAuditResultEntity {
       'shippingMethod': shippingMethod,
       'isDeleted': isDeleted ? 1 : 0,
       'syncAttempts': syncAttempts,
+      'promptVersion': promptVersion,
+      'verificationStatus': verificationStatus.name,
+      'hsDescriptionOfficial': hsDescriptionOfficial,
+      'updatedAt': updatedAt,
       'nationalExtensionCode': nationalExtensionCode,
       'nationalExtensionDescription': nationalExtensionDescription,
       'originPort': originPort,
@@ -81,7 +89,7 @@ class HsAuditResultModel extends HsAuditResultEntity {
       hsDescription: _asString(map['hsDescription']),
       chapter: _asString(map['chapter']),
       consignee: _asString(map['consignee']),
-      invoiceNumber: _asString(map['invoiceNumber']),
+      invoiceNumber: _asString(map['invoiceNumber'] ?? map['id']),
       cargoDescription: _asString(map['cargoDescription']),
       standardDutyRate: _asString(map['standardDutyRate']),
       vatRate: _asString(map['vatRate']),
@@ -89,10 +97,10 @@ class HsAuditResultModel extends HsAuditResultEntity {
       declaredValue: _asString(map['declaredValue'], '0.0'),
       currency: _asString(map['currency']),
       estimatedDutyAmount: _asString(map['estimatedDutyAmount']),
-      confidenceScore: _asInt(map['confidenceScore'], 100), // Default high confidence for manually verified/trusted data
+      confidenceScore: _asInt(map['confidenceScore'], 100),
       complianceWarnings: _asStringList(map['complianceWarnings']),
       requiredDocuments: _asStringList(map['requiredDocuments']),
-      auditTimestamp: _asString(map['auditTimestamp']),
+      auditTimestamp: _asString(map['auditTimestamp'] ?? map['timestamp']),
       riskLevel: parseRiskLevel(map['riskLevel']),
       status: _asString(map['status'], 'synced'),
       originCountry: _asString(map['originCountry'], 'IN'),
@@ -102,6 +110,10 @@ class HsAuditResultModel extends HsAuditResultEntity {
       shippingMethod: _asString(map['shippingMethod'], 'Sea Freight'),
       isDeleted: _asBoolFromInt(map['isDeleted']),
       syncAttempts: _asInt(map['syncAttempts'], 0),
+      promptVersion: _asInt(map['promptVersion'] ?? map['prompt_version'], 0),
+      verificationStatus: parseVerificationStatus(map['verificationStatus']),
+      hsDescriptionOfficial: _asString(map['hsDescriptionOfficial']),
+      updatedAt: _asString(map['updatedAt'] ?? map['updated_at']),
       nationalExtensionCode: _asString(map['nationalExtensionCode']),
       nationalExtensionDescription: _asString(map['nationalExtensionDescription']),
       originPort: _asString(map['originPort']),
@@ -129,35 +141,24 @@ class HsAuditResultModel extends HsAuditResultEntity {
 
   static List<String> _asStringList(dynamic value) {
     if (value == null) return [];
-    
-    // 1. Handle JSON encoded string (common in SQFlite)
     if (value is String && value.startsWith('[')) {
       try {
         final decoded = json.decode(value);
         if (decoded is List) return decoded.map((e) => e.toString()).toList();
-      } catch (_) {
-        // Fall through to comma split if JSON fails
-      }
+      } catch (_) {}
     }
-
-    // 2. Handle comma-separated string (LLM inaccuracy fallback)
     if (value is String) {
       if (value.isEmpty) return [];
       return value.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     }
-
-    // 3. Handle actual List
     if (value is List) {
       return value.map((e) => e.toString()).toList();
     }
-
     return [value.toString()];
   }
 
   static List<Map<String, String>> _asPortChargesList(dynamic value) {
     if (value == null) return [];
-    
-    // 1. Handle JSON encoded string (common in SQFlite)
     if (value is String && value.startsWith('[')) {
       try {
         final decoded = json.decode(value);
@@ -171,8 +172,6 @@ class HsAuditResultModel extends HsAuditResultEntity {
         }
       } catch (_) {}
     }
-
-    // 2. Handle actual List from Firestore
     if (value is List) {
       return value.map((e) {
         if (e is Map) {
@@ -181,17 +180,23 @@ class HsAuditResultModel extends HsAuditResultEntity {
         return <String, String>{};
       }).where((m) => m.isNotEmpty).toList();
     }
-
     return [];
   }
 
   static RiskLevel parseRiskLevel(dynamic value) {
     final String val = _asString(value, 'low').toLowerCase().replaceAll('_', '');
     if (val == 'invalidinput') return RiskLevel.invalidInput;
-    
     return RiskLevel.values.firstWhere(
       (e) => e.name.toLowerCase() == val,
-      orElse: () => RiskLevel.low, // Default to LOW as per requirement
+      orElse: () => RiskLevel.low,
+    );
+  }
+
+  static VerificationStatus parseVerificationStatus(dynamic value) {
+    final String val = _asString(value, 'unverified').toLowerCase();
+    return VerificationStatus.values.firstWhere(
+      (e) => e.name.toLowerCase() == val,
+      orElse: () => VerificationStatus.unverified,
     );
   }
 
@@ -229,6 +234,10 @@ class HsAuditResultModel extends HsAuditResultEntity {
     String? shippingMethod,
     bool? isDeleted,
     int? syncAttempts,
+    int? promptVersion,
+    VerificationStatus? verificationStatus,
+    String? hsDescriptionOfficial,
+    String? updatedAt,
     String? nationalExtensionCode,
     String? nationalExtensionDescription,
     String? originPort,
@@ -262,6 +271,10 @@ class HsAuditResultModel extends HsAuditResultEntity {
       shippingMethod: shippingMethod ?? this.shippingMethod,
       isDeleted: isDeleted ?? this.isDeleted,
       syncAttempts: syncAttempts ?? this.syncAttempts,
+      promptVersion: promptVersion ?? this.promptVersion,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      hsDescriptionOfficial: hsDescriptionOfficial ?? this.hsDescriptionOfficial,
+      updatedAt: updatedAt ?? this.updatedAt,
       nationalExtensionCode: nationalExtensionCode ?? this.nationalExtensionCode,
       nationalExtensionDescription: nationalExtensionDescription ?? this.nationalExtensionDescription,
       originPort: originPort ?? this.originPort,

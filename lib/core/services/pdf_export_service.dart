@@ -3,6 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
+import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
 
 /// Corporate-grade PDF Export Service for high-fidelity customs worksheets.
 /// Generates A4-compliant manifests designed for physical port inspections and brokerage sign-offs.
@@ -300,11 +301,40 @@ class PdfExportService {
   }
 
   pw.Widget _buildWarningBox(HsAuditResultModel audit) {
+    PdfColor bgColor = PdfColors.green50;
+    PdfColor borderColor = PdfColors.green200;
+    PdfColor iconColor = PdfColors.green900;
+    PdfColor textColor = PdfColors.green800;
+    String title = 'SECURE / LOW RISK';
+    String iconChar = 'v'; // Tick-like symbol
+
+    // Logic Alignment: Escalate risk if unverified
+    RiskLevel effectiveRisk = audit.riskLevel;
+    if (audit.verificationStatus == VerificationStatus.unverified && effectiveRisk == RiskLevel.low) {
+      effectiveRisk = RiskLevel.medium;
+    }
+
+    if (effectiveRisk == RiskLevel.high || effectiveRisk == RiskLevel.invalidInput) {
+      bgColor = PdfColors.red50;
+      borderColor = PdfColors.red200;
+      iconColor = PdfColors.red900;
+      textColor = PdfColors.red800;
+      title = 'CRITICAL REGULATORY COMPLIANCE ADVISORY';
+      iconChar = '!';
+    } else if (effectiveRisk == RiskLevel.medium) {
+      bgColor = PdfColors.amber50;
+      borderColor = PdfColors.amber200;
+      iconColor = PdfColors.amber900;
+      textColor = PdfColors.amber800;
+      title = 'CAUTION / MODERATE RISK';
+      iconChar = '?';
+    }
+
     return pw.Container(
       width: double.infinity,
       decoration: pw.BoxDecoration(
-        color: PdfColors.red50,
-        border: pw.Border.all(color: PdfColors.red200),
+        color: bgColor,
+        border: pw.Border.all(color: borderColor),
         borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
       ),
       padding: const pw.EdgeInsets.all(12),
@@ -313,19 +343,31 @@ class PdfExportService {
         children: [
           pw.Row(
             children: [
-              pw.Text('!', style: pw.TextStyle(color: PdfColors.red900, fontWeight: pw.FontWeight.bold, fontSize: 14)),
+              pw.Text(iconChar, style: pw.TextStyle(color: iconColor, fontWeight: pw.FontWeight.bold, fontSize: 14)),
               pw.SizedBox(width: 8),
-              pw.Text('CRITICAL REGULATORY COMPLIANCE ADVISORY', style: pw.TextStyle(color: PdfColors.red900, fontWeight: pw.FontWeight.bold, fontSize: 9)),
+              pw.Text(title, style: pw.TextStyle(color: iconColor, fontWeight: pw.FontWeight.bold, fontSize: 9)),
             ],
           ),
           pw.SizedBox(height: 8),
+          if (audit.verificationStatus == VerificationStatus.unverified) ...[
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(bottom: 4),
+              child: pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('* ', style: pw.TextStyle(color: textColor, fontWeight: pw.FontWeight.bold)),
+                  pw.Expanded(child: pw.Text('UNVERIFIED: Code ${audit.hsCode} was not found in the local Master Tariff Database. Validated via AI Prediction only.', style: pw.TextStyle(fontSize: 8.5, color: textColor, fontWeight: pw.FontWeight.bold))),
+                ],
+              ),
+            ),
+          ],
           ...audit.complianceWarnings.map((w) => pw.Padding(
             padding: const pw.EdgeInsets.only(bottom: 4),
             child: pw.Row(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text('* ', style: pw.TextStyle(color: PdfColors.red800)),
-                pw.Expanded(child: pw.Text(w, style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.red800))),
+                pw.Text('* ', style: pw.TextStyle(color: textColor)),
+                pw.Expanded(child: pw.Text(w, style: pw.TextStyle(fontSize: 8.5, color: textColor))),
               ],
             ),
           )),

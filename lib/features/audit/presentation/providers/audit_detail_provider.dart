@@ -24,3 +24,10 @@ final auditDetailProvider = FutureProvider.family.autoDispose<HsAuditResultEntit
   final userId = user?.uid ?? 'anonymous';
   return await useCase.execute(invoiceId, userId);
 });
+
+final auditHistoryProvider = FutureProvider.family.autoDispose<List<HsAuditResultEntity>, String>((ref, invoiceId) async {
+  final invoiceRepo = ref.watch(inv.invoiceRepositoryProvider);
+  final user = ref.watch(authStateProvider).value;
+  final userId = user?.uid ?? 'anonymous';
+  return await invoiceRepo.getAuditHistory(invoiceId, userId);
+});

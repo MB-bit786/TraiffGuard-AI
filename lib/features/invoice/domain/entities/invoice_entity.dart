@@ -13,20 +13,24 @@ class InvoiceEntity {
     required this.dutyRate,
     required this.status,
     required this.timestamp,
+    this.recordId = '',
     this.isDeleted = false,
     this.syncAttempts = 0,
     this.updatedAt = '',
+    this.isHidden = false,
   });
 
-  final String id;
+  final String id; // Local Primary Key (legacy compatible)
+  final String recordId; // Globally unique UUID for Firestore and sync
   final String userId;
   final String consignee;
   final String cargoDescription;
   final String hsCode;
   final String dutyRate;
-  final String status; // Keep as string for DB but use enum for logic
+  final String status;
   final String timestamp;
   final bool isDeleted;
   final int syncAttempts;
   final String updatedAt;
+  final bool isHidden;
 }

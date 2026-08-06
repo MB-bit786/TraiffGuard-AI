@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:uuid/uuid.dart';
 import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import 'package:hscode_auditor/features/audit/domain/entities/hs_audit_result_entity.dart';
+import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.dart';
 import 'package:hscode_auditor/features/invoice/domain/repository/invoice_repository.dart';
 import 'package:hscode_auditor/core/services/gemini_audit_service.dart';
 import 'package:hscode_auditor/features/auth/domain/usecases/auth_use_cases.dart';
@@ -112,6 +114,7 @@ class InvoiceUseCases {
       originPort: params.originPort,
       destinationPort: params.destinationPort,
       isDeleted: false,
+      recordId: const Uuid().v4(),
       updatedAt: DateTime.now().toIso8601String(),
       complianceWarnings: [],
       requiredDocuments: ['Commercial Invoice', 'Packing List', 'Certificate of Origin'],
@@ -126,6 +129,7 @@ class InvoiceUseCases {
       dutyRate: '${offlineAuditResult.standardDutyRate} (Est)',
       status: 'offlineDraft',
       timestamp: timestamp,
+      recordId: offlineAuditResult.recordId,
       updatedAt: offlineAuditResult.updatedAt,
     );
 
@@ -152,15 +156,10 @@ class InvoiceUseCases {
       final Map<String, dynamic> aiData = json.decode(jsonResponse);
 
       final String aiHsCode = aiData['hsCode']?.toString() ?? 'UNKNOWN';
-      final tariffEntry = await repository.findTariffByCode(aiHsCode);
+      final lookup = await repository.findTariffByCode(aiHsCode);
 
-      VerificationStatus status = VerificationStatus.unverified;
-      String officialDescription = '';
-
-      if (tariffEntry != null) {
-        officialDescription = tariffEntry[DbConstants.colDescription] ?? '';
-        status = VerificationStatus.verified;
-      }
+      final status = lookup.status;
+      final officialDescription = lookup.row?[DbConstants.colDescription] ?? '';
 
       final String timestamp = DateTime.now().toString().split('.').first;
       final String updatedAt = DateTime.now().toIso8601String();
@@ -171,6 +170,7 @@ class InvoiceUseCases {
         hsDescription: aiData['hsDescription']?.toString() ?? 'Description not available',
         hsDescriptionOfficial: officialDescription,
         verificationStatus: status,
+        recordId: offlineAuditResult.recordId,
         updatedAt: updatedAt,
         chapter: aiData['chapter']?.toString() ?? 'WCO Classification Chapter',
         consignee: params.consignee,
@@ -223,6 +223,7 @@ class InvoiceUseCases {
         dutyRate: '${auditReport.standardDutyRate} Duty',
         status: 'synced',
         timestamp: auditReport.auditTimestamp,
+        recordId: auditReport.recordId,
         updatedAt: auditReport.updatedAt,
       );
 
@@ -236,6 +237,43 @@ class InvoiceUseCases {
         error: 'AI is currently overloaded. Document saved as high-fidelity local draft.',
       );
     }
+  }
+
+  /// Professional Correction Pipeline:
+  /// Instead of overwriting, we mark the old record as HIDDEN and create a NEW UUID record.
+  /// This maintains a regulatory audit trail of all manual adjustments.
+  Future<void> supersedeAudit({
+    required HsAuditResultEntity oldRecord,
+    required HsAuditResultEntity newRecord,
+  }) async {
+    final String timestamp = DateTime.now().toIso8601String();
+    
+    // 1. Hide the old audit record directly
+    await repository.hideAuditRecord(oldRecord.recordId, oldRecord.userId);
+    
+    // 2. Insert the correction as a NEW row with its own UUID.
+    final supersededRecord = (newRecord as HsAuditResultModel).copyWith(
+      recordId: const Uuid().v4(),
+      supersedesId: oldRecord.recordId,
+      updatedAt: timestamp,
+    );
+    await repository.cacheAuditRecord(supersededRecord);
+
+    // 3. Update the invoice manifest to point at the current classification metadata.
+    final manifestNew = InvoiceEntity(
+      id: supersededRecord.invoiceNumber,
+      userId: supersededRecord.userId,
+      consignee: supersededRecord.consignee,
+      cargoDescription: supersededRecord.cargoDescription,
+      hsCode: supersededRecord.hsCode,
+      dutyRate: supersededRecord.standardDutyRate,
+      status: supersededRecord.status,
+      timestamp: supersededRecord.auditTimestamp,
+      recordId: supersededRecord.recordId,
+      updatedAt: timestamp,
+    );
+
+    await repository.cacheInvoiceManifest(manifestNew);
   }
 
   RiskLevel _parseRiskLevel(String value) {

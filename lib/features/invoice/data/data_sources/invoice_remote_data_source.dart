@@ -12,11 +12,31 @@ class InvoiceRemoteDataSourceImpl implements InvoiceRemoteDataSource {
 
   @override
   Future<void> syncAuditResult(HsAuditResultModel result) async {
+    // 1. Sync the manifest (Top-level)
     await _firestore
         .collection('users')
         .doc(result.userId)
         .collection('invoices')
         .doc(result.invoiceNumber)
+        .set({
+          'consignee': result.consignee,
+          'cargoDescription': result.cargoDescription,
+          'hsCode': result.hsCode,
+          'status': result.status,
+          'timestamp': result.auditTimestamp,
+          'updatedAt': result.updatedAt,
+          'recordId': result.recordId,
+          'isDeleted': result.isDeleted ? 1 : 0,
+        }, SetOptions(merge: true));
+
+    // 2. Sync the specific audit record (Sub-collection)
+    await _firestore
+        .collection('users')
+        .doc(result.userId)
+        .collection('invoices')
+        .doc(result.invoiceNumber)
+        .collection('audits')
+        .doc(result.recordId)
         .set(result.toMap());
   }
 

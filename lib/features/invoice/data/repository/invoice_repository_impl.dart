@@ -108,6 +108,21 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
   }
 
   @override
+  Future<List<HsAuditResultEntity>> getAuditHistory(String invoiceNumber, String userId) async {
+    return await localDataSource.getAuditHistory(invoiceNumber, userId);
+  }
+
+  @override
+  Future<void> hideAuditRecord(String recordId, String userId) async {
+    await localDataSource.hideAuditRecord(recordId, userId);
+  }
+
+  @override
+  Future<void> cacheAuditRecord(HsAuditResultEntity result) async {
+    await localDataSource.cacheAuditRecord(_toModel(result));
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> searchTariffMaster(String query) async {
     final db = await dbService.database;
     if (query.trim().isEmpty) return await db.query('static_hs_codes', limit: 50);
@@ -118,18 +133,14 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
   }
 
   @override
-  Future<Map<String, dynamic>?> findTariffByCode(String rawCode) async {
+  Future<TariffLookup> findTariffByCode(String rawCode) async {
     final db = await dbService.database;
     final code = AppConstants.normalizeHsCode(rawCode);
     
     debugPrint('[TARIFF] Verifying HS Code: $rawCode (Normalized: $code)');
 
-    if (code.isEmpty) return null;
+    if (code.isEmpty) return const TariffLookup(null, VerificationStatus.unverified);
     
-    // DEBUG: Check database state for this code
-    final allRows = await db.query('static_hs_codes', where: '${DbConstants.colStaticHsCode} LIKE ?', whereArgs: ['3923%'], limit: 5);
-    debugPrint('[TARIFF] DB Sample for 3923: ${allRows.map((e) => e[DbConstants.colStaticHsCode]).toList()}');
-
     // 1. Precise match (Ground Truth)
     final rows = await db.query(
       'static_hs_codes',
@@ -140,7 +151,7 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
     
     if (rows.isNotEmpty) {
       debugPrint('[TARIFF] Found precise match for: $code');
-      return rows.first;
+      return TariffLookup(rows.first, VerificationStatus.verified);
     }
 
     // 2. Fallback: 4-digit Heading match if 6-digit sub-heading is missing
@@ -150,16 +161,17 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
         'static_hs_codes',
         where: '${DbConstants.colNormalizedHsCode} LIKE ?',
         whereArgs: ['$heading%'],
+        orderBy: '${DbConstants.colNormalizedHsCode} ASC', // Deterministic ordering
         limit: 1,
       );
       if (headingRows.isNotEmpty) {
-        debugPrint('[TARIFF] Found Heading-level match for: $heading');
-        return headingRows.first;
+        debugPrint('[TARIFF] Found Heading-level match (Partial) for: $heading');
+        return TariffLookup(headingRows.first, VerificationStatus.headingMatch);
       }
     }
 
     debugPrint('[TARIFF] No database match found for: $code');
-    return null;
+    return const TariffLookup(null, VerificationStatus.unverified);
   }
 
   @override

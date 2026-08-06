@@ -1,7 +1,8 @@
 /// Database Constants for high-fidelity schema management.
 class DbConstants {
-  // Columns for consolidated Invoices table
-  static const String colId = 'id';
+  static const String colId = 'id'; // Local ID (may match recordId or legacy invoiceNumber)
+  static const String colInvoiceNumber = 'invoice_number'; // Link between manifest and audits
+  static const String colRecordId = 'record_id'; // UUID for multi-device sync
   static const String colUserId = 'userId';
   static const String colConsignee = 'consignee';
   static const String colCargoDescription = 'cargoDescription';
@@ -36,6 +37,8 @@ class DbConstants {
   static const String colVerificationStatus = 'verificationStatus';
   static const String colHsDescriptionOfficial = 'hsDescriptionOfficial';
   static const String colUpdatedAt = 'updated_at';
+  static const String colSupersedesId = 'supersedes_id';
+  static const String colIsHidden = 'is_hidden';
 
   // Static HS Codes table columns
   static const String colStaticHsCode = 'hs_code';

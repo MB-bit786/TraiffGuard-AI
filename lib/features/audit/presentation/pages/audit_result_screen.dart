@@ -57,7 +57,7 @@ class AuditResultScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: _buildAppBar(context, ref, finalResult),
-      body: _buildBody(context, finalResult),
+      body: _buildBody(context, ref, finalResult),
       bottomNavigationBar: _buildBottomBar(context, ref, finalResult),
     );
   }
@@ -212,7 +212,7 @@ class AuditResultScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBody(BuildContext context, HsAuditResultEntity result) {
+  Widget _buildBody(BuildContext context, WidgetRef ref, HsAuditResultEntity result) {
     if (result.riskLevel == RiskLevel.invalidInput) {
       return ListView(
         physics: const BouncingScrollPhysics(),
@@ -245,9 +245,109 @@ class AuditResultScreen extends ConsumerWidget {
         const SizedBox(height: 14),
         _buildRequiredDocumentsCard(context, result),
         const SizedBox(height: 14),
+        _buildHistorySection(context, ref, result),
+        const SizedBox(height: 14),
         _buildInvoiceMetaCard(context, result),
         const SizedBox(height: 80),
       ],
+    );
+  }
+
+  Widget _buildHistorySection(BuildContext context, WidgetRef ref, HsAuditResultEntity result) {
+    final historyAsync = ref.watch(auditHistoryProvider(result.invoiceNumber));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return historyAsync.maybeWhen(
+      data: (history) {
+        if (history.length <= 1) return const SizedBox.shrink();
+        
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? TariffColors.navySurface : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: isDark ? TariffColors.cardBorder : Colors.grey[300]!, width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.history_rounded, size: 16, color: TariffColors.amberPending),
+                    const SizedBox(width: 8),
+                    Text(
+                      'CORRECTION HISTORY',
+                      style: TextStyle(
+                        color: isDark ? TariffColors.textMuted : Colors.grey[600],
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(height: 1, color: isDark ? TariffColors.divider : Colors.grey[200]),
+              ...history.map((record) {
+                final isCurrent = record.recordId == result.recordId;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isCurrent ? (isDark ? Colors.white.withValues(alpha: 0.03) : Colors.blue[50]?.withValues(alpha: 0.3)) : null,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isCurrent ? TariffColors.greenVerified : TariffColors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              record.hsCode,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: isDark ? TariffColors.textPrimary : Colors.black87,
+                                decoration: record.isHidden ? TextDecoration.lineThrough : null,
+                              ),
+                            ),
+                            Text(
+                              record.auditTimestamp,
+                              style: TextStyle(color: TariffColors.textMuted, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (isCurrent)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: TariffColors.greenVerified.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'CURRENT',
+                            style: TextStyle(color: TariffColors.greenVerified, fontSize: 9, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
     );
   }
 
@@ -539,6 +639,19 @@ class AuditResultScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+                if (result.supersedesId.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.auto_fix_high_rounded, size: 12, color: TariffColors.amberPending),
+                      const SizedBox(width: 4),
+                      Text(
+                        'CORRECTED FROM PREVIOUS CLASSIFICATION',
+                        style: TextStyle(color: TariffColors.amberPending, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 20),
                 Text('HS CODE (UNIVERSAL)', style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[500], fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 2.5)),
                 const SizedBox(height: 6),
@@ -582,7 +695,11 @@ class AuditResultScreen extends ConsumerWidget {
                 if (result.verificationStatus == VerificationStatus.verified) ...[
                   Text(result.hsDescriptionOfficial, style: const TextStyle(color: TariffColors.greenVerified, fontSize: 16, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
-                  Text('Official Tariff Nomenclature', style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.grey[600], fontSize: 11, fontStyle: FontStyle.italic)),
+                  Text('Official WCO Tariff Nomenclature', style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.grey[600], fontSize: 11, fontStyle: FontStyle.italic)),
+                ] else if (result.verificationStatus == VerificationStatus.headingMatch) ...[
+                  Text(result.hsDescriptionOfficial, style: const TextStyle(color: TariffColors.amberPending, fontSize: 16, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text('Official Heading-Level Description (Partial Match)', style: TextStyle(color: isDark ? TariffColors.textSecondary : Colors.grey[600], fontSize: 11, fontStyle: FontStyle.italic)),
                 ] else ...[
                   Text(result.hsDescription, style: const TextStyle(color: TariffColors.amberPending, fontSize: 16, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
@@ -635,6 +752,13 @@ class AuditResultScreen extends ConsumerWidget {
             textColor = TariffColors.amberPending;
             label = 'UNVERIFIED';
             icon = Icons.help_outline_rounded;
+            break;
+          case VerificationStatus.headingMatch:
+            bgColor = isDark ? TariffColors.amberPendingSoft : Colors.amber[50]!;
+            borderColor = isDark ? TariffColors.amberPendingBorder : Colors.amber[200]!;
+            textColor = TariffColors.amberPending;
+            label = 'HEADING MATCH';
+            icon = Icons.account_tree_rounded;
             break;
         }
     }
@@ -693,7 +817,7 @@ class AuditResultScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(scoreLabel, style: TextStyle(color: barColor, fontSize: 12, fontWeight: FontWeight.w800)),
+              Text(scoreLabel, style: TextStyle(color: barColor, fontSize: 11, fontWeight: FontWeight.w800)),
             ],
           ),
           const SizedBox(height: 10),
@@ -704,7 +828,12 @@ class AuditResultScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             score >= 85 ? 'Model reports high probability based on description patterns.' : score >= 65 ? 'Model reports moderate probability; manual verification advised.' : 'Model reports low probability; classification may be inaccurate.',
-            style: TextStyle(color: barColor.withValues(alpha: 0.8), fontSize: 11.5),
+            style: TextStyle(color: barColor.withValues(alpha: 0.8), fontSize: 11),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Reported by the AI model; not an independent accuracy measure.',
+            style: TextStyle(color: isDark ? TariffColors.textMuted : Colors.grey[500], fontSize: 9, fontStyle: FontStyle.italic),
           ),
         ],
       ),
@@ -768,6 +897,9 @@ class AuditResultScreen extends ConsumerWidget {
 
     if (result.verificationStatus == VerificationStatus.unverified) {
       warnings.insert(0, 'UNVERIFIED: HS Code ${result.hsCode} was not found in the local Master Tariff Database. This classification relies solely on AI prediction — please confirm its validity manually.');
+      if (effectiveRisk == RiskLevel.low) effectiveRisk = RiskLevel.medium;
+    } else if (result.verificationStatus == VerificationStatus.headingMatch) {
+      warnings.insert(0, 'PARTIAL MATCH: The exact 6-digit subheading ${result.hsCode} was not found. We matched the nearest 4-digit Heading instead — please confirm the correct subheading before filing.');
       if (effectiveRisk == RiskLevel.low) effectiveRisk = RiskLevel.medium;
     }
 

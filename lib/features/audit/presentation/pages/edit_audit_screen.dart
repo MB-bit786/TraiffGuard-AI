@@ -9,7 +9,6 @@ import 'package:hscode_auditor/features/audit/data/models/hs_audit_result_model.
 import 'package:hscode_auditor/features/dashboard/presentation/providers/connection_provider.dart';
 import 'package:hscode_auditor/features/dashboard/presentation/providers/invoice_list_provider.dart';
 import 'package:hscode_auditor/features/invoice/presentation/providers/invoice_providers.dart';
-import 'package:hscode_auditor/features/invoice/domain/entities/invoice_entity.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hscode_auditor/core/constants/app_constants.dart';
 
@@ -139,7 +138,6 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final repository = ref.read(invoiceRepositoryProvider);
       final user = ref.read(authStateProvider).value;
       final userId = user?.uid ?? 'anonymous';
       final String currentId = _invoiceNumberController.text.trim();
@@ -182,25 +180,11 @@ class _EditAuditScreenState extends ConsumerState<EditAuditScreen> {
         portCharges: widget.audit.portCharges,
       );
 
-      final manifest = InvoiceEntity(
-        id: manualDraft.invoiceNumber,
-        userId: manualDraft.userId,
-        consignee: manualDraft.consignee,
-        cargoDescription: manualDraft.cargoDescription,
-        hsCode: manualDraft.hsCode,
-        dutyRate: manualDraft.standardDutyRate,
-        status: manualDraft.status,
-        timestamp: manualDraft.auditTimestamp,
-        isDeleted: manualDraft.isDeleted,
+      // 2. Execute professional supersede pipeline
+      await ref.read(invoiceUseCasesProvider).supersedeAudit(
+        oldRecord: widget.audit,
+        newRecord: manualDraft,
       );
-
-      // 2. Perform optimistic local save
-      await repository.cacheInvoiceManifest(manifest, auditResult: manualDraft);
-
-      // 3. CLEANUP: If the user changed the invoice number, delete the old record.
-      if (currentId != widget.audit.invoiceNumber) {
-        await repository.hardDeleteInvoice(widget.audit.invoiceNumber, userId);
-      }
 
       if (mounted) {
         // Immediate UI feedback

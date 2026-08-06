@@ -16,6 +16,9 @@ abstract class InvoiceLocalDataSource {
   Future<void> hardDeleteInvoice(String id, String userId);
   Future<void> hardDeleteAudit(String id, String userId);
   Future<HsAuditResultModel?> getAuditResult(String id, String userId);
+  Future<List<HsAuditResultModel>> getAuditHistory(String invoiceNumber, String userId);
+  Future<void> hideAuditRecord(String recordId, String userId);
+  Future<void> cacheAuditRecord(HsAuditResultModel result);
 }
 
 class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
@@ -42,12 +45,12 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
         DbConstants.colUserId: invoice.userId,
         DbConstants.colConsignee: invoice.consignee,
         DbConstants.colCargoDescription: invoice.cargoDescription,
-        DbConstants.colHsCode: invoice.hsCode,
-        DbConstants.colStandardDutyRate: invoice.dutyRate,
         DbConstants.colStatus: invoice.status,
         DbConstants.colTimestamp: invoice.timestamp,
         DbConstants.colIsDeleted: invoice.isDeleted ? 1 : 0,
         DbConstants.colUpdatedAt: invoice.updatedAt,
+        DbConstants.colRecordId: invoice.recordId,
+        DbConstants.colIsHidden: invoice.isHidden ? 1 : 0,
       };
 
       if (existing.isNotEmpty) {
@@ -70,11 +73,11 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
   @override
   Future<void> cacheAuditResult(HsAuditResultModel result) async {
     final db = await _dbService.database;
-    // Audit results are high-fidelity, so we can use REPLACE safely here as they contain all columns.
     await db.insert(
-      'invoices',
+      'audit_records',
       {
-        DbConstants.colId: result.invoiceNumber,
+        DbConstants.colRecordId: result.recordId,
+        DbConstants.colInvoiceNumber: result.invoiceNumber,
         DbConstants.colUserId: result.userId,
         DbConstants.colConsignee: result.consignee,
         DbConstants.colCargoDescription: result.cargoDescription,
@@ -98,7 +101,6 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
         DbConstants.colTotalWeightKg: result.totalWeightKg,
         DbConstants.colPlannedMonth: result.plannedMonth,
         DbConstants.colShippingMethod: result.shippingMethod,
-        DbConstants.colIsDeleted: result.isDeleted ? 1 : 0,
         DbConstants.colNationalExtensionCode: result.nationalExtensionCode,
         DbConstants.colNationalExtensionDescription: result.nationalExtensionDescription,
         DbConstants.colOriginPort: result.originPort,
@@ -108,6 +110,8 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
         DbConstants.colVerificationStatus: result.verificationStatus.name,
         DbConstants.colHsDescriptionOfficial: result.hsDescriptionOfficial,
         DbConstants.colUpdatedAt: result.updatedAt,
+        DbConstants.colSupersedesId: result.supersedesId,
+        DbConstants.colIsHidden: result.isHidden ? 1 : 0,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -116,26 +120,39 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
   @override
   Future<List<InvoiceModel>> getAllInvoices(String userId) async {
     final db = await _dbService.database;
-    final maps = await db.query(
-      'invoices',
-      where: '${DbConstants.colIsDeleted} = 0 AND ${DbConstants.colUserId} = ?',
-      whereArgs: [userId],
-      orderBy: '${DbConstants.colTimestamp} DESC',
-    );
+    final maps = await db.rawQuery('''
+      SELECT i.*, 
+             a.${DbConstants.colHsCode}, 
+             a.${DbConstants.colStandardDutyRate} as dutyRate
+      FROM invoices i
+      LEFT JOIN audit_records a ON i.${DbConstants.colId} = a.${DbConstants.colInvoiceNumber} 
+        AND a.${DbConstants.colIsHidden} = 0
+        AND a.${DbConstants.colUpdatedAt} = (
+          SELECT MAX(${DbConstants.colUpdatedAt}) 
+          FROM audit_records 
+          WHERE ${DbConstants.colInvoiceNumber} = i.${DbConstants.colId} 
+          AND ${DbConstants.colIsHidden} = 0
+        )
+      WHERE i.${DbConstants.colIsDeleted} = 0 
+        AND i.${DbConstants.colIsHidden} = 0 
+        AND i.${DbConstants.colUserId} = ?
+      ORDER BY i.${DbConstants.colTimestamp} DESC
+    ''', [userId]);
+    
     return maps.map((m) => _mapToInvoiceModel(m)).toList();
   }
 
   @override
   Future<List<HsAuditResultModel>> getPendingDraftResults(String userId) async {
     final db = await _dbService.database;
-    // CRITICAL: We only pick up records that are explicitly NOT synced and have < 5 failed attempts.
-    // This prevents the "Loop of Death" if AI returns an 'INVALID_INPUT' (which has status 'synced').
+    // CRITICAL: We only pick up records that are explicitly NOT synced.
+    // Sync state now lives on the audit record.
     final maps = await db.query(
-      'invoices',
-      where: '(${DbConstants.colConfidenceScore} = 0 OR ${DbConstants.colHsCode} LIKE "%(Offline Draft)%") '
-             'AND ${DbConstants.colStatus} != "synced" '
-             'AND ${DbConstants.colSyncAttempts} < 5 '
-             'AND ${DbConstants.colIsDeleted} = 0 AND ${DbConstants.colUserId} = ?',
+      'audit_records',
+      where: '${DbConstants.colStatus} != "synced" '
+             'AND ${DbConstants.colIsDeleted} = 0 '
+             'AND ${DbConstants.colIsHidden} = 0 '
+             'AND ${DbConstants.colUserId} = ?',
       whereArgs: [userId],
     );
     return maps.map((m) => _mapToHsAuditResultModel(m)).toList();
@@ -144,12 +161,23 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
   @override
   Future<List<InvoiceModel>> getTrashedInvoices(String userId) async {
     final db = await _dbService.database;
-    final maps = await db.query(
-      'invoices',
-      where: '${DbConstants.colIsDeleted} = 1 AND ${DbConstants.colUserId} = ?',
-      whereArgs: [userId],
-      orderBy: '${DbConstants.colTimestamp} DESC',
-    );
+    final maps = await db.rawQuery('''
+      SELECT i.*, 
+             a.${DbConstants.colHsCode}, 
+             a.${DbConstants.colStandardDutyRate} as dutyRate
+      FROM invoices i
+      LEFT JOIN audit_records a ON i.${DbConstants.colId} = a.${DbConstants.colInvoiceNumber} 
+        AND a.${DbConstants.colIsHidden} = 0
+        AND a.${DbConstants.colUpdatedAt} = (
+          SELECT MAX(${DbConstants.colUpdatedAt}) 
+          FROM audit_records 
+          WHERE ${DbConstants.colInvoiceNumber} = i.${DbConstants.colId} 
+          AND ${DbConstants.colIsHidden} = 0
+        )
+      WHERE i.${DbConstants.colIsDeleted} = 1 AND i.${DbConstants.colUserId} = ?
+      ORDER BY i.${DbConstants.colTimestamp} DESC
+    ''', [userId]);
+    
     return maps.map((m) => _mapToInvoiceModel(m)).toList();
   }
 
@@ -166,7 +194,13 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
 
   @override
   Future<void> updateAuditDeletedStatus(String id, String userId, bool isDeleted) async {
-    await updateInvoiceDeletedStatus(id, userId, isDeleted);
+    final db = await _dbService.database;
+    await db.update(
+      'audit_records',
+      {DbConstants.colIsDeleted: isDeleted ? 1 : 0},
+      where: '${DbConstants.colInvoiceNumber} = ? AND ${DbConstants.colUserId} = ?',
+      whereArgs: [id, userId],
+    );
   }
 
   @override
@@ -181,16 +215,58 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
 
   @override
   Future<void> hardDeleteAudit(String id, String userId) async {
-    await hardDeleteInvoice(id, userId);
+    final db = await _dbService.database;
+    await db.update(
+      'audit_records',
+      {
+        DbConstants.colIsHidden: 1,
+        DbConstants.colUpdatedAt: DateTime.now().toIso8601String(),
+      },
+      where: '${DbConstants.colRecordId} = ? AND ${DbConstants.colUserId} = ?',
+      whereArgs: [id, userId],
+    );
+  }
+
+  @override
+  Future<List<HsAuditResultModel>> getAuditHistory(String invoiceNumber, String userId) async {
+    final db = await _dbService.database;
+    final maps = await db.query(
+      'audit_records',
+      where: '${DbConstants.colInvoiceNumber} = ? AND ${DbConstants.colUserId} = ?',
+      whereArgs: [invoiceNumber, userId],
+      orderBy: '${DbConstants.colUpdatedAt} ASC',
+    );
+    return maps.map((m) => _mapToHsAuditResultModel(m)).toList();
+  }
+
+  @override
+  Future<void> hideAuditRecord(String recordId, String userId) async {
+    final db = await _dbService.database;
+    await db.update(
+      'audit_records',
+      {
+        DbConstants.colIsHidden: 1,
+        DbConstants.colUpdatedAt: DateTime.now().toIso8601String(),
+      },
+      where: '${DbConstants.colRecordId} = ? AND ${DbConstants.colUserId} = ?',
+      whereArgs: [recordId, userId],
+    );
+  }
+
+  @override
+  Future<void> cacheAuditRecord(HsAuditResultModel result) async {
+    await cacheAuditResult(result);
   }
 
   @override // this method is called when user opens an invoice to see the ai audit result
   Future<HsAuditResultModel?> getAuditResult(String id, String userId) async {
     final db = await _dbService.database;
     final maps = await db.query(
-      'invoices',
-      where: '${DbConstants.colId} = ? AND ${DbConstants.colUserId} = ?',
+      'audit_records',
+      where: '${DbConstants.colInvoiceNumber} = ? AND ${DbConstants.colUserId} = ? AND ${DbConstants.colIsHidden} = 0',
       whereArgs: [id, userId],
+      orderBy: '${DbConstants.colUpdatedAt} DESC',
+      limit: 1,
     );
     if (maps.isEmpty) return null;
     return _mapToHsAuditResultModel(maps.first);
@@ -208,6 +284,8 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
       timestamp: map[DbConstants.colTimestamp] as String? ?? '',
       isDeleted: (map[DbConstants.colIsDeleted] as int? ?? 0) == 1,
       updatedAt: map[DbConstants.colUpdatedAt] as String? ?? '',
+      recordId: map[DbConstants.colRecordId] as String? ?? '',
+      isHidden: (map[DbConstants.colIsHidden] as int? ?? 0) == 1,
     );
   }
 
@@ -218,7 +296,7 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
       hsDescription: map[DbConstants.colHsDescription] as String? ?? '',
       chapter: map[DbConstants.colChapter] as String? ?? '',
       consignee: map[DbConstants.colConsignee] as String? ?? '',
-      invoiceNumber: map[DbConstants.colId] as String,
+      invoiceNumber: (map[DbConstants.colInvoiceNumber] ?? map[DbConstants.colId]) as String,
       cargoDescription: map[DbConstants.colCargoDescription] as String? ?? '',
       standardDutyRate: map[DbConstants.colStandardDutyRate] as String? ?? '',
       vatRate: map[DbConstants.colVatRate] as String? ?? '',
@@ -243,6 +321,9 @@ class InvoiceLocalDataSourceImpl implements InvoiceLocalDataSource {
       originPort: map[DbConstants.colOriginPort] as String? ?? '',
       destinationPort: map[DbConstants.colDestinationPort] as String? ?? '',
       promptVersion: map[DbConstants.colPromptVersion] as int? ?? 0,
+      recordId: map[DbConstants.colRecordId] as String? ?? '',
+      supersedesId: map[DbConstants.colSupersedesId] as String? ?? '',
+      isHidden: (map[DbConstants.colIsHidden] as int? ?? 0) == 1,
       verificationStatus: HsAuditResultModel.parseVerificationStatus(map[DbConstants.colVerificationStatus]),
       hsDescriptionOfficial: map[DbConstants.colHsDescriptionOfficial] as String? ?? '',
       updatedAt: map[DbConstants.colUpdatedAt] as String? ?? '',

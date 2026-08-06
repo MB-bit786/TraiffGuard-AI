@@ -114,15 +114,10 @@ class AutoSyncService {
           final Map<String, dynamic> aiData = json.decode(jsonResponse);
 
           final String aiHsCode = aiData['hsCode']?.toString() ?? draft.hsCode;
-          final tariffEntry = await _repository.findTariffByCode(aiHsCode);
+          final lookup = await _repository.findTariffByCode(aiHsCode);
 
-          VerificationStatus vStatus = VerificationStatus.unverified;
-          String officialDescription = '';
-
-          if (tariffEntry != null) {
-            officialDescription = tariffEntry[DbConstants.colDescription] ?? '';
-            vStatus = VerificationStatus.verified;
-          }
+          final vStatus = lookup.status;
+          final officialDescription = lookup.row?[DbConstants.colDescription] ?? '';
 
           final upgradedResult = HsAuditResultEntity(
             hsCode: aiHsCode,
@@ -130,6 +125,7 @@ class AutoSyncService {
             hsDescription: aiData['hsDescription']?.toString() ?? draft.hsDescription,
             hsDescriptionOfficial: officialDescription,
             verificationStatus: vStatus,
+            recordId: draft.recordId,
             chapter: aiData['chapter']?.toString() ?? draft.chapter,
             consignee: draft.consignee,
             invoiceNumber: draft.invoiceNumber,
@@ -183,6 +179,8 @@ class AutoSyncService {
             dutyRate: '${upgradedResult.standardDutyRate} Duty',
             status: 'synced',
             timestamp: upgradedResult.auditTimestamp,
+            recordId: upgradedResult.recordId,
+            updatedAt: upgradedResult.updatedAt,
           );
 
           await _repository.updateAuditSyncStatus(updatedManifest, upgradedResult);
@@ -256,6 +254,8 @@ class AutoSyncService {
       riskLevel: RiskLevel.invalidInput,
       status: 'synced',
       auditTimestamp: DateTime.now().toString().split('.').first,
+      updatedAt: DateTime.now().toIso8601String(),
+      recordId: draft.recordId,
       originCountry: draft.originCountry,
       destinationCountry: draft.destinationCountry,
       totalWeightKg: draft.totalWeightKg,
@@ -275,6 +275,8 @@ class AutoSyncService {
       dutyRate: 'Blocked',
       status: 'synced',
       timestamp: upgradedResult.auditTimestamp,
+      recordId: upgradedResult.recordId,
+      updatedAt: upgradedResult.updatedAt,
     );
 
     await _repository.updateAuditSyncStatus(updatedManifest, upgradedResult);

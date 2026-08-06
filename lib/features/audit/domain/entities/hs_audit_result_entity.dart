@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 enum RiskLevel { low, medium, high, invalidInput }
-enum VerificationStatus { verified, unverified }
+enum VerificationStatus { verified, headingMatch, unverified }
 
 @immutable
 class HsAuditResultEntity {
@@ -33,9 +33,12 @@ class HsAuditResultEntity {
     this.isDeleted = false,
     this.syncAttempts = 0,
     this.promptVersion = 0,
+    this.recordId = '',
     this.verificationStatus = VerificationStatus.unverified,
     this.hsDescriptionOfficial = '',
     this.updatedAt = '',
+    this.supersedesId = '',
+    this.isHidden = false,
     this.nationalExtensionCode = '',
     this.nationalExtensionDescription = '',
     this.originPort = '',
@@ -70,9 +73,12 @@ class HsAuditResultEntity {
   final bool isDeleted;
   final int syncAttempts;
   final int promptVersion;
+  final String recordId;
   final VerificationStatus verificationStatus;
   final String hsDescriptionOfficial;
   final String updatedAt;
+  final String supersedesId;
+  final bool isHidden;
   final String nationalExtensionCode;
   final String nationalExtensionDescription;
   final String originPort;
